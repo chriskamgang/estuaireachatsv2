@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ea-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ea_user
+      POSTGRES_PASSWORD: ea_password_dev
+      POSTGRES_DB: estuaire_achats
+    volumes:
+      - ea_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: ea-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ea_redis:/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: ea-elasticsearch
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    volumes:
+      - ea_esdata:/usr/share/elasticsearch/data
+
+volumes:
+  ea_pgdata:
+  ea_redis:
+  ea_esdata:

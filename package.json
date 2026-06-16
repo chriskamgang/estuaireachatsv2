@@ -1,0 +1,24 @@
+{
+  "name": "estuaire-achats",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.3",
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:api": "turbo dev --filter=@ea/api",
+    "dev:web": "turbo dev --filter=@ea/web",
+    "dev:admin": "turbo dev --filter=@ea/admin",
+    "dev:seller": "turbo dev --filter=@ea/seller",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "clean": "turbo clean",
+    "db:migrate": "pnpm --filter @ea/api exec prisma migrate dev",
+    "db:seed": "pnpm --filter @ea/api exec prisma db seed",
+    "db:studio": "pnpm --filter @ea/api exec prisma studio",
+    "db:generate": "pnpm --filter @ea/api exec prisma generate"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  }
+}
