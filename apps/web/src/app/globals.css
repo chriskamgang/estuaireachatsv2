@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #E82328;
+  --color-primary-light: #FF3338;
+  --color-primary-hover: #D11F23;
+  --color-secondary: #4A90D9;
+  --color-orange: #E82328;
+  --color-orange-light: #FF3338;
+  --color-green: #00A06A;
+  --color-green-light: #00C77B;
+  --color-dark: #191919;
+  --color-gray-1: #333333;
+  --color-gray-2: #666666;
+  --color-gray-3: #999999;
+  --color-gray-4: #CCCCCC;
+  --color-gray-5: #E8E8E8;
+  --color-gray-6: #F5F5F5;
+  --color-alibaba-orange: #E82328;
+
+  --font-sans: 'Inter', 'Segoe UI', 'Roboto', system-ui, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-gray-6);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-4);
+  border-radius: 4px;
+}
+
+/* Price tier styling */
+.price-tier-active {
+  background-color: #FFF0F0;
+  border-color: var(--color-primary);
+}
+
+/* Product card hover */
+.product-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Star rating */
+.star-filled {
+  color: #FF9800;
+}
+
+/* Hero card with curved bottom edge */
+.hero-card-bottom {
+  border-radius: 0 0 40px 40px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* Hero search box - Alibaba style dashed border with orange glow */
+.hero-search-box {
+  border: 2px dashed var(--color-primary);
+  border-radius: 16px;
+  padding: 8px;
+  background: white;
+  box-shadow: 0 0 0 5px rgba(232, 35, 40, 0.08), 0 4px 20px rgba(232, 35, 40, 0.06);
+  transition: box-shadow 0.2s;
+}
+.hero-search-box:focus-within {
+  box-shadow: 0 0 0 5px rgba(232, 35, 40, 0.15), 0 6px 24px rgba(232, 35, 40, 0.1);
+}
+
+/* Hide scrollbar for horizontal carousels */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Verified badge */
+.badge-verified {
+  background: linear-gradient(135deg, #4A90D9, #357ABD);
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}

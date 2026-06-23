@@ -17,7 +17,8 @@ Clone Alibaba.com — Plateforme e-commerce multi-vendeurs (vente en gros et det
 - Demander confirmation avant de passer a l'etape suivante
 - Devise : FCFA (XAF) uniquement
 - Langues : FR (defaut) + EN
-- Paiements : MTN MoMo, Orange Money, PayPal
+- Paiements : MTN MoMo, Orange Money (via KPay), GFSolution, PayPal
+- Reference paiements : `/Users/chrisdev/Documents/MicroFinance-Cameroun/` (KPay API)
 - Logo : references/logo.png
 
 ## Suivi

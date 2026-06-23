@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3390f3;
+  --color-primary-hover: #1f6dc2;
+  --color-primary-soft: #f1fafd;
+  --color-success: #19c553;
+  --color-success-soft: rgba(25, 197, 83, 0.15);
+  --color-info: #8f60ee;
+  --color-info-soft: rgba(143, 96, 238, 0.15);
+  --color-warning: #ffc700;
+  --color-warning-soft: rgba(255, 199, 0, 0.15);
+  --color-danger: #F0416C;
+  --color-danger-soft: rgba(240, 65, 108, 0.15);
+  --color-secondary: #f1416c;
+  --color-dark: #191919;
+  --color-gray-1: #333333;
+  --color-gray-2: #666666;
+  --color-gray-3: #999999;
+  --color-gray-4: #CCCCCC;
+  --color-gray-5: #E8E8E8;
+  --color-gray-6: #F5F5F5;
+  --color-sidebar: #1a3a2a;
+  --color-sidebar-hover: #234d38;
+  --color-sidebar-active: #2d6248;
+
+  --color-grad-1: #7367f0;
+  --color-grad-2: #28c76f;
+  --color-grad-3: #ff9f43;
+  --color-grad-4: #ea5455;
+
+  --font-sans: 'Public Sans', 'Inter', system-ui, sans-serif;
+}
+
+body {
+  font-size: 13px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-4);
+  border-radius: 3px;
+}
+
+/* Stat cards with gradient wave */
+.stat-card-wave {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card-wave svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
