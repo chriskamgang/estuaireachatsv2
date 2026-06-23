@@ -591,7 +591,20 @@ const categoriesData: {
 async function main() {
   console.log('Seeding EstuaireAchats...');
 
-  // ─── Seller Package (pour rendre les produits visibles) ───
+  // ─── Seller Packages ───
+  await prisma.sellerPackage.upsert({
+    where: { id: 'pkg-free' },
+    update: {},
+    create: {
+      id: 'pkg-free',
+      name: 'Pack Gratuit',
+      price: 0,
+      productLimit: 10,
+      duration: 365,
+      isActive: true,
+    },
+  });
+
   const pkg = await prisma.sellerPackage.upsert({
     where: { id: 'pkg-basic' },
     update: {},

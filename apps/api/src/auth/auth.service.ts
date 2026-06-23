@@ -39,16 +39,36 @@ export class AuthService {
       },
     });
 
-    // Si vendeur, creer la boutique en attente
+    // Si vendeur, creer la boutique et activer un package gratuit si disponible
     if (dto.role === 'SELLER') {
       const slug = `${dto.firstName}-${dto.lastName}-${Date.now()}`.toLowerCase().replace(/\s+/g, '-');
-      await this.prisma.shop.create({
+
+      // Chercher un package gratuit actif
+      const freePackage = await this.prisma.sellerPackage.findFirst({
+        where: { price: 0, isActive: true },
+      });
+
+      const shop = await this.prisma.shop.create({
         data: {
           userId: user.id,
           name: `${dto.firstName} ${dto.lastName}`,
           slug,
+          status: freePackage ? 'ACTIVE' : 'PENDING',
+          ...(freePackage && { sellerPackageId: freePackage.id }),
         },
       });
+
+      // Si package gratuit, creer le paiement auto
+      if (freePackage) {
+        await this.prisma.sellerPackagePayment.create({
+          data: {
+            sellerId: user.id,
+            sellerPackageId: freePackage.id,
+            amount: 0,
+            paymentStatus: 'PAID',
+          },
+        });
+      }
     }
 
     const tokens = await this.generateTokens(user.id, user.email || user.phone || '', user.role);

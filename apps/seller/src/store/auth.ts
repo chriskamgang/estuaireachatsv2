@@ -18,6 +18,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: { firstName: string; lastName: string; email: string; password: string; phone?: string }) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
 }
@@ -34,6 +35,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     );
     if (res.data.user.role !== 'SELLER') {
       throw new Error('Acces refuse. Seuls les vendeurs peuvent se connecter.');
+    }
+    localStorage.setItem('seller_accessToken', res.data.accessToken);
+    localStorage.setItem('seller_refreshToken', res.data.refreshToken);
+    set({ user: res.data.user, isAuthenticated: true });
+  },
+
+  register: async (data) => {
+    const res = await api.post<{ data: { user: SellerUser; accessToken: string; refreshToken: string } }>(
+      '/auth/register',
+      { ...data, role: 'SELLER' },
+    );
+    if (res.data.user.role !== 'SELLER') {
+      throw new Error('Erreur lors de la creation du compte vendeur');
     }
     localStorage.setItem('seller_accessToken', res.data.accessToken);
     localStorage.setItem('seller_refreshToken', res.data.refreshToken);

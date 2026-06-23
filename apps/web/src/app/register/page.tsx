@@ -56,8 +56,9 @@ export default function RegisterPage() {
         email,
         password,
         phone: phone || undefined,
+        role: accountType === 'seller' ? 'SELLER' : 'BUYER',
       });
-      router.push('/');
+      router.push(accountType === 'seller' ? 'http://localhost:3003/dashboard' : '/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erreur lors de l'inscription";
       setError(message);

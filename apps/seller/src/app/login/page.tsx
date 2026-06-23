@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import { Lock, Mail, Store } from 'lucide-react';
 
@@ -92,6 +93,13 @@ export default function LoginPage() {
               {loading ? 'Connexion en cours...' : 'Se connecter'}
             </button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-gray-3">
+            Pas encore de compte ?{' '}
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              Creer un compte vendeur
+            </Link>
+          </p>
         </div>
       </div>
     </div>
