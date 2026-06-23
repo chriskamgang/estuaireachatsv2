@@ -19,6 +19,15 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class ChatController {
   constructor(private chatService: ChatService) {}
 
+  @Post('conversations')
+  @ApiOperation({ summary: 'Creer ou trouver une conversation' })
+  createConversation(
+    @CurrentUser('id') userId: string,
+    @Body() body: { receiverId: string; initialMessage?: string },
+  ) {
+    return this.chatService.findOrCreateConversation(userId, body.receiverId, body.initialMessage);
+  }
+
   @Get('conversations')
   @ApiOperation({ summary: 'Liste de mes conversations' })
   getConversations(@CurrentUser('id') userId: string) {

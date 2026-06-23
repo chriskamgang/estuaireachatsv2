@@ -50,9 +50,16 @@ export class ChatService {
           },
         });
 
+        // Trouver la boutique de l'autre utilisateur
+        const shop = await this.prisma.shop.findFirst({
+          where: { userId: otherUserId },
+          select: { id: true, name: true, slug: true, logo: true },
+        });
+
         return {
           ...conv,
           otherUser,
+          shop: shop ?? null,
           unreadCount,
           lastMessage: conv.messages[0] ?? null,
         };
@@ -60,6 +67,43 @@ export class ChatService {
     );
 
     return { result: true, data: enriched };
+  }
+
+  async findOrCreateConversation(userId: string, receiverId: string, initialMessage?: string) {
+    const [id1, id2] = [userId, receiverId].sort();
+
+    let conversation = await this.prisma.conversation.findFirst({
+      where: {
+        OR: [
+          { senderId: id1, receiverId: id2 },
+          { senderId: id2, receiverId: id1 },
+        ],
+      },
+    });
+
+    if (!conversation) {
+      conversation = await this.prisma.conversation.create({
+        data: { senderId: userId, receiverId },
+      });
+    }
+
+    // Envoyer le message initial si fourni
+    if (initialMessage) {
+      await this.prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: userId,
+          receiverId,
+          content: initialMessage,
+        },
+      });
+      await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { updatedAt: new Date() },
+      });
+    }
+
+    return { result: true, data: { id: conversation.id } };
   }
 
   async getMessages(userId: string, conversationId: string) {
@@ -96,37 +140,55 @@ export class ChatService {
   }
 
   async send(userId: string, dto: SendMessageDto) {
-    // Trouver ou creer la conversation
-    const [id1, id2] = [userId, dto.receiverId].sort();
+    let conversation: any = null;
+    let receiverId = dto.receiverId;
 
-    let conversation = await this.prisma.conversation.findFirst({
-      where: {
-        OR: [
-          { senderId: id1, receiverId: id2 },
-          { senderId: id2, receiverId: id1 },
-        ],
-      },
-    });
-
-    if (!conversation) {
-      conversation = await this.prisma.conversation.create({
-        data: {
-          senderId: userId,
-          receiverId: dto.receiverId,
-        },
+    // Si conversationId fourni, on l'utilise directement
+    if (dto.conversationId) {
+      conversation = await this.prisma.conversation.findUnique({
+        where: { id: dto.conversationId },
       });
-    } else {
+      if (!conversation) {
+        throw new NotFoundException('Conversation non trouvee');
+      }
+      if (conversation.senderId !== userId && conversation.receiverId !== userId) {
+        throw new ForbiddenException('Acces refuse');
+      }
+      receiverId = conversation.senderId === userId ? conversation.receiverId : conversation.senderId;
       await this.prisma.conversation.update({
         where: { id: conversation.id },
         data: { updatedAt: new Date() },
       });
+    } else if (receiverId) {
+      // Trouver ou creer la conversation par receiverId
+      const [id1, id2] = [userId, receiverId].sort();
+      conversation = await this.prisma.conversation.findFirst({
+        where: {
+          OR: [
+            { senderId: id1, receiverId: id2 },
+            { senderId: id2, receiverId: id1 },
+          ],
+        },
+      });
+      if (!conversation) {
+        conversation = await this.prisma.conversation.create({
+          data: { senderId: userId, receiverId },
+        });
+      } else {
+        await this.prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { updatedAt: new Date() },
+        });
+      }
+    } else {
+      throw new NotFoundException('receiverId ou conversationId requis');
     }
 
     const message = await this.prisma.message.create({
       data: {
         conversationId: conversation.id,
         senderId: userId,
-        receiverId: dto.receiverId,
+        receiverId,
         content: dto.content,
         attachments: dto.attachments ?? [],
       },

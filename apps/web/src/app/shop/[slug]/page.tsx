@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/auth';
 import ProductCard from '@/components/product/ProductCard';
 
 // ---------------------------------------------------------------------------
@@ -58,6 +59,7 @@ interface Shop {
   mainCategories?: string;
   capabilities?: string[];
   certifications?: string[];
+  userId?: string;
   factoryImages?: { url: string; label?: string }[];
   overview?: Record<string, any>;
   supplierService?: number;
@@ -231,6 +233,28 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('Produits');
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleContactSeller = async () => {
+    if (!shop) return;
+    const { user } = useAuthStore.getState();
+    if (!user) { router.push('/login'); return; }
+    if (chatLoading) return;
+    setChatLoading(true);
+    try {
+      const receiverId = shop.userId || shop.id;
+      const res = await api.post<{ data: { id: string } }>('/chat/conversations', {
+        receiverId,
+        initialMessage: `Bonjour, je suis intéressé par votre boutique "${shop.name}".`,
+      });
+      const convId = res.data?.id;
+      router.push(convId ? `/account/messages?conv=${convId}` : '/account/messages');
+    } catch {
+      router.push('/account/messages');
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   // Fetch shop data
   useEffect(() => {
@@ -387,7 +411,7 @@ export default function ShopPage() {
                 {/* Action buttons */}
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <button
-                    onClick={() => router.push('/account/messages')}
+                    onClick={handleContactSeller}
                     className="flex items-center gap-2 px-5 py-2.5 border border-gray-4 text-dark rounded-full text-[14px] font-medium hover:border-dark transition-colors"
                   >
                     <MessageCircle className="w-4 h-4" />
@@ -786,7 +810,7 @@ export default function ShopPage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/account/messages')}
+                onClick={handleContactSeller}
                 className="w-full py-2.5 bg-orange text-white rounded-full text-[14px] font-semibold hover:bg-orange-light transition-colors mb-2 flex items-center justify-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />

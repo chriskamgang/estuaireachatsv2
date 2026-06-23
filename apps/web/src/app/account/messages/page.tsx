@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Send, MessageSquare } from 'lucide-react';
 import { cn, timeAgo } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/auth';
 
 interface Message {
   id: string;
@@ -14,19 +16,33 @@ interface Message {
 
 interface Conversation {
   id: string;
-  seller: {
+  senderId: string;
+  receiverId: string;
+  otherUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  } | null;
+  shop: {
     id: string;
     name: string;
-    avatar: string;
-  };
-  lastMessage: string;
-  lastMessageTime: string;
-  unread: number;
+    slug: string;
+    logo: string;
+  } | null;
+  lastMessage: {
+    content: string;
+    createdAt: string;
+  } | null;
+  unreadCount: number;
 }
 
 export default function MessagesPage() {
+  const searchParams = useSearchParams();
+  const convParam = searchParams.get('conv');
+  const { user } = useAuthStore();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [activeConvId, setActiveConvId] = useState<string | null>(convParam);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loadingConvs, setLoadingConvs] = useState(true);
@@ -39,7 +55,7 @@ export default function MessagesPage() {
       .then((res) => {
         const convs = res.data || [];
         setConversations(convs);
-        if (convs.length > 0) setActiveConvId(convs[0].id);
+        if (!activeConvId && convs.length > 0) setActiveConvId(convs[0].id);
       })
       .catch(() => {})
       .finally(() => setLoadingConvs(false));
@@ -59,14 +75,29 @@ export default function MessagesPage() {
   }, [messages]);
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
+  const getReceiverId = (conv: Conversation | undefined) => {
+    if (!conv || !user) return '';
+    return conv.senderId === user.id ? conv.receiverId : conv.senderId;
+  };
+  const getDisplayName = (conv: Conversation | undefined) => {
+    if (!conv) return '';
+    if (conv.shop?.name) return conv.shop.name;
+    const u = conv.otherUser;
+    return u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Utilisateur' : 'Utilisateur';
+  };
+  const getAvatar = (conv: Conversation | undefined) => {
+    if (!conv) return '';
+    return conv.shop?.logo || conv.otherUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(getDisplayName(conv).slice(0, 2))}&background=E82328&color=fff&size=40&bold=true`;
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeConvId || sending) return;
     setSending(true);
     try {
-      const res = await api.post<{ data: Message }>('/chat/messages', {
-        conversationId: activeConvId,
+      const receiverId = getReceiverId(activeConv);
+      const res = await api.post<{ data: Message }>('/chat/send', {
+        receiverId,
         content: newMessage.trim(),
       });
       if (res.data) {
@@ -122,24 +153,24 @@ export default function MessagesPage() {
               )}
             >
               <img
-                src={conv.seller.avatar}
+                src={getAvatar(conv)}
                 alt=""
                 className="h-10 w-10 shrink-0 rounded-full object-cover"
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="truncate text-sm font-semibold text-dark">
-                    {conv.seller.name}
+                    {getDisplayName(conv)}
                   </span>
                   <span className="shrink-0 text-[11px] text-gray-3">
-                    {timeAgo(conv.lastMessageTime)}
+                    {conv.lastMessage?.createdAt ? timeAgo(conv.lastMessage.createdAt) : ''}
                   </span>
                 </div>
-                <p className="mt-0.5 line-clamp-1 text-xs text-gray-3">{conv.lastMessage}</p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-gray-3">{conv.lastMessage?.content || ''}</p>
               </div>
-              {conv.unread > 0 && (
+              {conv.unreadCount > 0 && (
                 <span className="mt-1 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
-                  {conv.unread}
+                  {conv.unreadCount}
                 </span>
               )}
             </button>
@@ -152,11 +183,11 @@ export default function MessagesPage() {
             {/* Thread header */}
             <div className="flex items-center gap-3 border-b border-gray-5 px-5 py-3">
               <img
-                src={activeConv.seller.avatar}
+                src={getAvatar(activeConv)}
                 alt=""
                 className="h-9 w-9 rounded-full object-cover"
               />
-              <span className="text-sm font-semibold text-dark">{activeConv.seller.name}</span>
+              <span className="text-sm font-semibold text-dark">{getDisplayName(activeConv)}</span>
             </div>
 
             {/* Messages */}
@@ -167,7 +198,7 @@ export default function MessagesPage() {
                 </div>
               ) : (
                 messages.map((msg) => {
-                  const isMe = msg.senderId === 'me';
+                  const isMe = msg.senderId === user?.id;
                   return (
                     <div
                       key={msg.id}
