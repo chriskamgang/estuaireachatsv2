@@ -147,19 +147,14 @@ export class DeliveryService {
     this.logger.log(`[MerciE Webhook] Evenement: ${event.status} — request: ${event.request_id}`);
 
     // Trouver la commande liée
-    const order = await this.prisma.order.findFirst({
+    const order: any = await (this.prisma.order as any).findFirst({
       where: {
         OR: [
           { id: event.order_id || '' },
-          { notes: { contains: event.request_id } },
+          { note: { contains: event.request_id } },
         ],
       },
-      select: {
-        id: true,
-        orderNumber: true,
-        userId: true,
-        sellerId: true,
-        status: true,
+      include: {
         buyer: { select: { firstName: true, lastName: true } },
         seller: { select: { firstName: true, lastName: true, shop: { select: { name: true } } } },
       },
@@ -179,7 +174,7 @@ export class DeliveryService {
       case 'driver_assigned':
         await this.prisma.order.update({
           where: { id: order.id },
-          data: { deliveryStatus: 'PICKED_UP' },
+          data: { status: 'PROCESSING' },
         });
 
         // Notifier le vendeur : un livreur arrive
@@ -205,7 +200,7 @@ export class DeliveryService {
       case 'in_transit':
         await this.prisma.order.update({
           where: { id: order.id },
-          data: { status: 'SHIPPED', shippedAt: new Date(), deliveryStatus: 'ON_THE_WAY' },
+          data: { status: 'SHIPPED', shippedAt: new Date() },
         });
 
         // Notifier le vendeur
@@ -237,7 +232,7 @@ export class DeliveryService {
       case 'delivered':
         await this.prisma.order.update({
           where: { id: order.id },
-          data: { status: 'DELIVERED', deliveredAt: new Date(), deliveryStatus: 'DELIVERED' },
+          data: { status: 'DELIVERED', deliveredAt: new Date() },
         });
 
         // Notifier le vendeur
@@ -269,7 +264,7 @@ export class DeliveryService {
       case 'cancelled':
         await this.prisma.order.update({
           where: { id: order.id },
-          data: { deliveryStatus: 'CANCELLED' },
+          data: { status: 'CANCELLED', cancelledAt: new Date() },
         });
 
         // Notifier le vendeur

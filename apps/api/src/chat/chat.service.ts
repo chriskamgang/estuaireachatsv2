@@ -188,7 +188,7 @@ export class ChatService {
       data: {
         conversationId: conversation.id,
         senderId: userId,
-        receiverId,
+        receiverId: receiverId || '',
         content: dto.content,
         attachments: dto.attachments ?? [],
       },
