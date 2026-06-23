@@ -193,6 +193,8 @@ model Shop {
   address           String?
   city              String?
   country           String     @default("CM")
+  latitude          Float?
+  longitude         Float?
   verified          Boolean    @default(false)
   verifiedAt        DateTime?
   yearsActive       Int        @default(0)

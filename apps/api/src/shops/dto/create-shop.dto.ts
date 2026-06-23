@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsArray } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsArray, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateShopDto {
@@ -36,6 +36,21 @@ export class CreateShopDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @ApiPropertyOptional({ example: 'Douala', description: 'Ville de la boutique' })
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @ApiPropertyOptional({ example: 4.0511, description: 'Latitude GPS de la boutique' })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: 9.7679, description: 'Longitude GPS de la boutique' })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
 
   @ApiPropertyOptional({ example: '40+ employes', description: 'Nombre d\'employes' })
   @IsString()

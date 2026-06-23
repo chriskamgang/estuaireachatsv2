@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Wallet, Plus, DollarSign, Loader2, X } from 'lucide-react';
+import { Wallet, Plus, DollarSign, Loader2, X, AlertCircle } from 'lucide-react';
 import DataTable, { Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 import StatCard from '@/components/ui/StatCard';
@@ -17,6 +17,9 @@ interface Withdrawal {
   statut: string;
 }
 
+const PHONE_REGEX = /^237[0-9]{9}$/;
+const MIN_AMOUNT = 1000;
+
 export default function WithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -28,6 +31,7 @@ export default function WithdrawalsPage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ amount: 0, method: 'MTN_MOMO', phoneNumber: '', note: '' });
+  const [submitError, setSubmitError] = useState('');
   const perPage = 10;
 
   const fetchData = useCallback(async () => {
@@ -46,12 +50,12 @@ export default function WithdrawalsPage() {
         setTotal(res.meta?.total || 0);
         if (res.balance) {
           setBalance(res.balance.available || 0);
-          setPending(
-            (res.data || [])
-              .filter((w: any) => w.status === 'PENDING')
-              .reduce((s: number, w: any) => s + w.amount, 0)
-          );
           setTotalWithdrawn(res.balance.totalWithdrawn || 0);
+          // Calculer le pending depuis le solde API (totalEarned - totalWithdrawn - available = pending en cours)
+          const earned = res.balance.totalEarned || 0;
+          const withdrawn = res.balance.totalWithdrawn || 0;
+          const available = res.balance.available || 0;
+          setPending(earned - withdrawn - available);
         }
       }
     } catch (err) {
@@ -65,18 +69,37 @@ export default function WithdrawalsPage() {
     fetchData();
   }, [fetchData]);
 
+  // Validation
+  const phoneError = form.phoneNumber && !PHONE_REGEX.test(form.phoneNumber)
+    ? 'Format invalide. Utilisez 237 suivi de 9 chiffres (ex: 237690123456)'
+    : '';
+  const amountError = form.amount > 0 && form.amount < MIN_AMOUNT
+    ? `Minimum ${formatPrice(MIN_AMOUNT)}`
+    : form.amount > balance
+      ? `Solde insuffisant (disponible: ${formatPrice(balance)})`
+      : '';
+  const isFormValid = form.amount >= MIN_AMOUNT && form.amount <= balance && PHONE_REGEX.test(form.phoneNumber);
+
   const handleWithdraw = async () => {
+    if (!isFormValid) return;
     setSaving(true);
+    setSubmitError('');
     try {
       await api.post('/withdraws', form);
       setShowModal(false);
       setForm({ amount: 0, method: 'MTN_MOMO', phoneNumber: '', note: '' });
       await fetchData();
     } catch (err: any) {
-      alert(err.message || 'Erreur');
+      setSubmitError(err.response?.data?.message || err.message || 'Erreur lors de la demande de retrait');
     } finally {
       setSaving(false);
     }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSubmitError('');
+    setForm({ amount: 0, method: 'MTN_MOMO', phoneNumber: '', note: '' });
   };
 
   const columns: Column<Withdrawal>[] = [
@@ -128,12 +151,22 @@ export default function WithdrawalsPage() {
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-dark">Demande de retrait</h3>
-              <button onClick={() => setShowModal(false)}><X className="w-5 h-5 text-gray-3" /></button>
+              <button onClick={closeModal}><X className="w-5 h-5 text-gray-3" /></button>
             </div>
+
+            {submitError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-700">{submitError}</p>
+                <button onClick={() => setSubmitError('')} className="ml-auto"><X className="w-4 h-4 text-red-400" /></button>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-1 mb-1">Montant (FCFA)</label>
-                <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} min={1000} className="w-full border border-gray-5 rounded-lg px-3 py-2 text-sm outline-none" />
+                <input type="number" value={form.amount || ''} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} min={MIN_AMOUNT} placeholder="Minimum 1 000 FCFA" className={`w-full border rounded-lg px-3 py-2 text-sm outline-none ${amountError ? 'border-red-400' : 'border-gray-5'}`} />
+                {amountError && <p className="text-xs text-red-500 mt-1">{amountError}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-1 mb-1">Methode</label>
@@ -144,13 +177,14 @@ export default function WithdrawalsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-1 mb-1">Numero telephone (237...)</label>
-                <input type="text" value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} placeholder="237XXXXXXXXX" className="w-full border border-gray-5 rounded-lg px-3 py-2 text-sm outline-none" />
+                <input type="text" value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} placeholder="237XXXXXXXXX" className={`w-full border rounded-lg px-3 py-2 text-sm outline-none ${phoneError ? 'border-red-400' : 'border-gray-5'}`} />
+                {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-1 mb-1">Note (optionnel)</label>
                 <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full border border-gray-5 rounded-lg px-3 py-2 text-sm outline-none" />
               </div>
-              <button onClick={handleWithdraw} disabled={saving} className="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-hover transition text-sm font-medium">
+              <button onClick={handleWithdraw} disabled={saving || !isFormValid} className="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-hover transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                 {saving ? 'Envoi...' : 'Envoyer la demande'}
               </button>
             </div>

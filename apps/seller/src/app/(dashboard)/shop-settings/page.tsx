@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { api } from '@/lib/api';
+import dynamic from 'next/dynamic';
+
+const GoogleMapPicker = dynamic(() => import('@/components/ui/GoogleMapPicker'), { ssr: false });
 
 interface Shop {
   id: string;
@@ -16,6 +19,8 @@ interface Shop {
   address: string | null;
   city: string | null;
   country: string | null;
+  latitude: number | null;
+  longitude: number | null;
   staffCount: string | null;
   factoryArea: string | null;
   annualRevenue: string | null;
@@ -50,6 +55,8 @@ export default function ShopSettingsPage() {
     // Champs fabricant
     city: '',
     country: 'CM',
+    latitude: null as number | null,
+    longitude: null as number | null,
     staffCount: '',
     factoryArea: '',
     annualRevenue: '',
@@ -85,6 +92,8 @@ export default function ShopSettingsPage() {
           banner: s.banner || '',
           city: s.city || '',
           country: s.country || 'CM',
+          latitude: s.latitude,
+          longitude: s.longitude,
           staffCount: s.staffCount || '',
           factoryArea: s.factoryArea || '',
           annualRevenue: s.annualRevenue || '',
@@ -112,7 +121,7 @@ export default function ShopSettingsPage() {
     setSuccess('');
 
     try {
-      const payload: Record<string, string | string[] | undefined> = {
+      const payload: Record<string, any> = {
         name: form.name,
         description: form.description || undefined,
         phone: form.phone || undefined,
@@ -122,6 +131,8 @@ export default function ShopSettingsPage() {
         banner: form.banner || undefined,
         city: form.city || undefined,
         country: form.country || undefined,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
         staffCount: form.staffCount || undefined,
         factoryArea: form.factoryArea || undefined,
         annualRevenue: form.annualRevenue || undefined,
@@ -213,6 +224,22 @@ export default function ShopSettingsPage() {
                 <label className="block text-sm font-medium text-gray-1 mb-1.5">Pays</label>
                 <input type="text" value={form.country} onChange={(e) => update('country', e.target.value)} placeholder="CM" className={inputClass} />
               </div>
+
+              {/* Google Maps Picker */}
+              <GoogleMapPicker
+                latitude={form.latitude}
+                longitude={form.longitude}
+                address={form.address}
+                onLocationChange={(lat, lng, addr, city) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    latitude: lat,
+                    longitude: lng,
+                    ...(addr && { address: addr }),
+                    ...(city && { city }),
+                  }));
+                }}
+              />
               <div>
                 <label className="block text-sm font-medium text-gray-1 mb-1.5">Nombre d&apos;employes</label>
                 <input type="text" value={form.staffCount} onChange={(e) => update('staffCount', e.target.value)} placeholder="Ex: 40+ employes" className={inputClass} />

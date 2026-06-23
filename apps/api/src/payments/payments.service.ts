@@ -374,7 +374,21 @@ export class PaymentsService {
 
     this.logger.log(`[Webhook] Evenement recu: ${event.event} — ${event.paymentId}`);
 
-    // Trouver les payments par kpayId ou externalId
+    // 1. Verifier si c'est un retrait (withdrawal)
+    const withdraw = await this.prisma.withdrawRequest.findFirst({
+      where: {
+        OR: [
+          { kpayId: event.paymentId },
+          ...(event.externalId ? [{ id: { contains: event.externalId.split('-')[1] || '' } }] : []),
+        ],
+      },
+    });
+
+    if (withdraw) {
+      return this.handleKPayWithdrawWebhook(withdraw, event);
+    }
+
+    // 2. Sinon, traiter comme un paiement
     const payments = await this.prisma.payment.findMany({
       where: {
         OR: [
@@ -385,7 +399,7 @@ export class PaymentsService {
     });
 
     if (payments.length === 0) {
-      this.logger.warn(`[Webhook] Aucun paiement trouve: ${event.paymentId} / ${event.externalId}`);
+      this.logger.warn(`[Webhook] Aucun paiement/retrait trouve: ${event.paymentId} / ${event.externalId}`);
       return { received: true };
     }
 
@@ -402,6 +416,37 @@ export class PaymentsService {
         where: { id: payment.id },
         data: { webhookReceived: true },
       });
+    }
+
+    return { received: true };
+  }
+
+  /**
+   * Traite un webhook KPay pour un retrait vendeur
+   */
+  private async handleKPayWithdrawWebhook(withdraw: any, event: any) {
+    this.logger.log(`[Webhook] Retrait detecte: ${withdraw.id} — status: ${event.status}`);
+
+    if (withdraw.status === 'COMPLETED' || withdraw.status === 'REJECTED') {
+      this.logger.log(`[Webhook] Retrait ${withdraw.id} deja ${withdraw.status}, ignore`);
+      return { received: true };
+    }
+
+    if (event.status === 'COMPLETED') {
+      await this.prisma.withdrawRequest.update({
+        where: { id: withdraw.id },
+        data: { status: 'COMPLETED' },
+      });
+      this.logger.log(`[Webhook] Retrait COMPLETE: ${withdraw.id}`);
+    } else if (event.status === 'FAILED' || event.status === 'CANCELLED') {
+      await this.prisma.withdrawRequest.update({
+        where: { id: withdraw.id },
+        data: {
+          status: 'REJECTED',
+          failureReason: event.failureReason || event.status,
+        },
+      });
+      this.logger.warn(`[Webhook] Retrait ECHEC: ${withdraw.id} — ${event.failureReason || event.status}`);
     }
 
     return { received: true };
@@ -738,13 +783,13 @@ export class PaymentsService {
   /**
    * Cree automatiquement une demande de livraison Merci E apres paiement
    */
-  private async requestMerciEDelivery(orderId: string) {
+  private async requestMerciEDelivery(orderId: string): Promise<void> {
     if (!(await this.merciE.isConfigured())) {
       this.logger.log('[MerciE] Non configure — livraison manuelle requise');
       return;
     }
 
-    const order = await this.prisma.order.findUnique({
+    const order: any = await (this.prisma.order as any).findUnique({
       where: { id: orderId },
       include: {
         address: true,
@@ -752,10 +797,10 @@ export class PaymentsService {
         seller: {
           select: {
             firstName: true, lastName: true, phone: true,
-            shop: { select: { name: true, address: true, city: true } },
+            shop: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           },
         },
-        items: { include: { product: { select: { name: true } } }, take: 3 },
+        details: { include: { product: { select: { name: true } } }, take: 3 },
       },
     });
 
@@ -765,18 +810,39 @@ export class PaymentsService {
     }
 
     const shop = order.seller.shop;
-    const productNames = order.items.map((i: any) => i.product.name).join(', ');
+
+    // Verifier que le client et la boutique sont dans la meme ville
+    const shopCity = (shop?.city || '').trim().toLowerCase();
+    const clientCity = (order.address.city || '').trim().toLowerCase();
+
+    if (!shopCity || !clientCity) {
+      this.logger.warn(`[MerciE] Ville manquante (boutique: "${shopCity}", client: "${clientCity}") — livraison manuelle requise`);
+      return;
+    }
+
+    if (shopCity !== clientCity) {
+      this.logger.log(`[MerciE] Villes differentes (boutique: "${shopCity}", client: "${clientCity}") — livraison inter-ville, Merci E non applicable`);
+      return;
+    }
+
+    // Coordonnees GPS de la boutique (fallback par ville)
+    const pickupLat = shop?.latitude || this.getCityDefaultLat(shopCity);
+    const pickupLng = shop?.longitude || this.getCityDefaultLng(shopCity);
+    const dropLat = order.address.latitude || this.getCityDefaultLat(clientCity);
+    const dropLng = order.address.longitude || this.getCityDefaultLng(clientCity);
+
+    const productNames = (order.details || []).map((i: any) => i.product?.name || i.name).join(', ');
     const packageDesc = productNames.length > 100 ? productNames.slice(0, 97) + '...' : productNames;
 
     const result = await this.merciE.createDeliveryRequest({
       pickupAddress: shop?.address || shop?.name || 'Boutique vendeur',
-      pickupLat: 4.0511,  // TODO: utiliser les coords GPS de la boutique
-      pickupLng: 9.7679,
+      pickupLat,
+      pickupLng,
       pickupContactName: `${order.seller.firstName} ${order.seller.lastName}`,
       pickupContactPhone: order.seller.phone || '',
       dropAddress: order.address.address,
-      dropLat: order.address.latitude || 4.0511,
-      dropLng: order.address.longitude || 9.7679,
+      dropLat,
+      dropLng,
       dropContactName: `${order.buyer.firstName} ${order.buyer.lastName}`,
       dropContactPhone: order.buyer.phone || '',
       packageDescription: packageDesc || `Commande ${order.orderNumber}`,
@@ -791,7 +857,46 @@ export class PaymentsService {
       },
     });
 
-    this.logger.log(`[MerciE] Livraison creee pour commande ${order.orderNumber} — requestId: ${result.requestId}`);
+    this.logger.log(`[MerciE] Livraison creee pour commande ${order.orderNumber} (ville: ${clientCity}) — requestId: ${result.requestId}`);
+  }
+
+  /**
+   * Coordonnees GPS par defaut pour les grandes villes du Cameroun
+   */
+  private getCityDefaultLat(city: string): number {
+    const coords: Record<string, number> = {
+      douala: 4.0511,
+      yaounde: 3.8480,
+      bafoussam: 5.4764,
+      bamenda: 5.9527,
+      garoua: 9.3014,
+      maroua: 10.5956,
+      bertoua: 4.5772,
+      ngaoundere: 7.3167,
+      ebolowa: 2.9000,
+      kribi: 2.9400,
+      limbe: 4.0242,
+      buea: 4.1560,
+    };
+    return coords[city] || 4.0511;
+  }
+
+  private getCityDefaultLng(city: string): number {
+    const coords: Record<string, number> = {
+      douala: 9.7679,
+      yaounde: 11.5021,
+      bafoussam: 10.4217,
+      bamenda: 10.1460,
+      garoua: 13.3984,
+      maroua: 14.3246,
+      bertoua: 13.6846,
+      ngaoundere: 13.5833,
+      ebolowa: 11.1500,
+      kribi: 9.9100,
+      limbe: 9.2149,
+      buea: 9.2413,
+    };
+    return coords[city] || 9.7679;
   }
 
   private formatPaymentResponse(payment: any) {

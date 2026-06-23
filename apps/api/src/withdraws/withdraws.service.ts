@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { KPayService } from '../payments/kpay.service';
 import { CreateWithdrawDto, ProcessWithdrawDto } from './dto/create-withdraw.dto';
@@ -227,8 +228,9 @@ export class WithdrawsService {
   }
 
   /**
-   * Polling: verifier les retraits PROCESSING via KPay
+   * Polling automatique: verifier les retraits PROCESSING via KPay toutes les 5 minutes
    */
+  @Interval(5 * 60 * 1000)
   async pollProcessingWithdraws() {
     const processing = await this.prisma.withdrawRequest.findMany({
       where: { status: WithdrawStatus.PROCESSING, kpayId: { not: null } },
