@@ -14,6 +14,15 @@ import {
   TrendingUp,
   Loader2,
 } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import StatCard from '@/components/ui/StatCard';
 import DataTable, { type Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -28,13 +37,23 @@ interface OrderItem {
   statut: string;
 }
 
+interface MonthlyRevenue {
+  mois: string;
+  montant: number;
+}
+
 interface DashboardData {
   totalOrders: number;
   totalUsers: number;
   totalProducts: number;
   totalRevenue: number;
   pendingOrders: number;
+  totalSellers: number;
+  totalCategories: number;
+  totalBrands: number;
   recentOrders: OrderItem[];
+  monthlyRevenue: MonthlyRevenue[];
+  topProducts: { nom: string; ventes: number; montant: number }[];
 }
 
 const orderColumns: Column<OrderItem>[] = [
@@ -62,19 +81,29 @@ export default function DashboardPage() {
     totalProducts: 0,
     totalRevenue: 0,
     pendingOrders: 0,
+    totalSellers: 0,
+    totalCategories: 0,
+    totalBrands: 0,
     recentOrders: [],
+    monthlyRevenue: [],
+    topProducts: [],
   });
 
   useEffect(() => {
     async function fetchDashboard() {
       try {
-        const [ordersRes, usersRes, productsRes, recentOrdersRes, paymentsRes] = await Promise.all([
+        const [ordersRes, usersRes, productsRes, recentOrdersRes, reportsRes, sellersRes, categoriesRes, brandsRes] = await Promise.all([
           api.get<any>('/orders/admin/all?perPage=1').catch(() => ({ meta: { total: 0 } })),
           api.get<any>('/users?perPage=1').catch(() => ({ meta: { total: 0 } })),
           api.get<any>('/products/admin/all?perPage=1').catch(() => ({ meta: { total: 0 } })),
           api.get<any>('/orders/admin/all?perPage=10').catch(() => ({ data: [] })),
-          api.get<any>('/payments/stats').catch(() => ({ totalRevenue: 0 })),
+          api.get<any>('/orders/admin/reports').catch(() => ({ data: {} })),
+          api.get<any>('/shops?verified=true').catch(() => ({ data: [] })),
+          api.get<any>('/categories').catch(() => ({ data: [] })),
+          api.get<any>('/brands').catch(() => ({ data: [] })),
         ]);
+
+        const report = reportsRes.data || {};
 
         const orders = (recentOrdersRes.data || []).map((o: any) => ({
           code: o.code || o.orderCode || `CMD-${o.id}`,
@@ -89,12 +118,17 @@ export default function DashboardPage() {
         ).length;
 
         setData({
-          totalOrders: ordersRes.meta?.total || 0,
+          totalOrders: report.totalOrders || ordersRes.meta?.total || 0,
           totalUsers: usersRes.meta?.total || 0,
           totalProducts: productsRes.meta?.total || 0,
-          totalRevenue: paymentsRes.totalRevenue || paymentsRes.total || 0,
+          totalRevenue: report.totalRevenue || 0,
           pendingOrders: pendingCount,
+          totalSellers: Array.isArray(sellersRes.data) ? sellersRes.data.length : (sellersRes.data || []).length,
+          totalCategories: Array.isArray(categoriesRes.data) ? categoriesRes.data.length : 0,
+          totalBrands: Array.isArray(brandsRes.data) ? brandsRes.data.length : 0,
           recentOrders: orders,
+          monthlyRevenue: report.revenusMensuels || [],
+          topProducts: report.topProduits || [],
         });
       } catch (err) {
         console.error('Erreur chargement dashboard:', err);
@@ -134,13 +168,13 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Total Categories"
-          value="--"
+          value={data.totalCategories.toLocaleString('fr-FR')}
           gradient="linear-gradient(135deg, #7367f0 0%, #9e95f5 100%)"
           icon={FolderTree}
         />
         <StatCard
           title="Total Marques"
-          value="--"
+          value={data.totalBrands.toLocaleString('fr-FR')}
           gradient="linear-gradient(135deg, #ea5455 0%, #f08182 100%)"
           icon={Tags}
         />
@@ -149,7 +183,7 @@ export default function DashboardPage() {
       {/* Row 2: Plain stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Produits" value={data.totalProducts.toLocaleString('fr-FR')} icon={Package} />
-        <StatCard title="Total Vendeurs" value="--" icon={Store} />
+        <StatCard title="Total Vendeurs" value={data.totalSellers.toLocaleString('fr-FR')} icon={Store} />
         <StatCard title="Commandes en attente" value={data.pendingOrders.toLocaleString('fr-FR')} icon={Clock} />
         <StatCard
           title="Total Revenus"
@@ -158,15 +192,38 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Row 3: Sales chart placeholder */}
+      {/* Row 3: Sales chart */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-dark">Ventes des 12 derniers mois</h2>
           <TrendingUp className="w-5 h-5 text-primary" />
         </div>
-        <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-5 rounded-lg">
-          <p className="text-gray-3 text-sm">Graphique des ventes (a integrer)</p>
-        </div>
+        {data.monthlyRevenue.length === 0 ? (
+          <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-5 rounded-lg">
+            <p className="text-gray-3 text-sm">Aucune donnee de ventes disponible</p>
+          </div>
+        ) : (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.monthlyRevenue} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorMontant" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#E82328" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#E82328" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="mois" tick={{ fontSize: 12, fill: '#999' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#999' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
+                <Tooltip
+                  formatter={(value: number) => [formatPrice(value), 'Revenus']}
+                  contentStyle={{ borderRadius: 8, border: '1px solid #eee', fontSize: 13 }}
+                />
+                <Area type="monotone" dataKey="montant" stroke="#E82328" strokeWidth={2.5} fill="url(#colorMontant)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Row 4: Recent orders + Top products */}
@@ -185,10 +242,10 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-base font-semibold text-dark mb-4">Top 10 Produits</h2>
           <div className="space-y-3">
-            {data.recentOrders.length === 0 ? (
+            {data.topProducts.length === 0 ? (
               <p className="text-sm text-gray-3 text-center py-8">Aucune donnee disponible</p>
             ) : (
-              data.recentOrders.slice(0, 10).map((order, idx) => (
+              data.topProducts.map((product, idx) => (
                 <div
                   key={idx}
                   className="flex items-center gap-3 py-2 border-b border-gray-5 last:border-0"
@@ -197,11 +254,11 @@ export default function DashboardPage() {
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-dark truncate">{order.client}</p>
-                    <p className="text-xs text-gray-3">{order.code}</p>
+                    <p className="text-sm font-medium text-dark truncate">{product.nom}</p>
+                    <p className="text-xs text-gray-3">{product.ventes} ventes</p>
                   </div>
                   <span className="text-xs font-medium text-gray-2 whitespace-nowrap">
-                    {formatPrice(order.montant)}
+                    {formatPrice(product.montant)}
                   </span>
                 </div>
               ))

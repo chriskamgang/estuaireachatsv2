@@ -44,6 +44,7 @@ import CategoryIcon from '@/components/ui/CategoryIcon';
 import { MOCK_PRODUCTS } from '@/lib/mockData';
 import { formatPrice } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/auth';
 import type { Product } from '@/lib/mockData';
 
 function getCountryName(code: string): string {
@@ -362,7 +363,31 @@ function FactoryCarousel({ images }: { images: string[] }) {
   );
 }
 
-function ManufacturerCard({ m }: { m: typeof MANUFACTURERS[0] }) {
+function ManufacturerCard({ m }: { m: typeof MANUFACTURERS[0] & { ownerId?: string } }) {
+  const router = useRouter();
+  const [liked, setLiked] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleChat = async () => {
+    const { user } = useAuthStore.getState();
+    if (!user) { router.push('/login'); return; }
+    if (chatLoading) return;
+    const receiverId = (m as any).ownerId || m.id;
+    setChatLoading(true);
+    try {
+      const res = await api.post<{ data: { id: string } }>('/chat/conversations', {
+        receiverId,
+        initialMessage: `Bonjour, je suis intéressé par votre boutique "${m.name}".`,
+      });
+      const convId = res.data?.id;
+      router.push(convId ? `/account/messages?conv=${convId}` : '/account/messages');
+    } catch {
+      router.push('/account/messages');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-shadow">
       {/* Top: Logo + info + buttons */}
@@ -395,16 +420,27 @@ function ManufacturerCard({ m }: { m: typeof MANUFACTURERS[0] }) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-3">
-          <button className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-5 text-gray-3 hover:text-primary hover:border-primary transition-colors">
-            <Heart className="w-4 h-4" />
+          <button
+            onClick={() => setLiked(!liked)}
+            className={`w-9 h-9 flex items-center justify-center rounded-full border transition-colors ${liked ? 'border-primary text-primary' : 'border-gray-5 text-gray-3 hover:text-primary hover:border-primary'}`}
+          >
+            <Heart className={`w-4 h-4 ${liked ? 'fill-primary' : ''}`} />
           </button>
-          <button className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium border border-gray-5 rounded-full text-dark hover:border-dark transition-colors">
+          <button
+            onClick={handleChat}
+            disabled={chatLoading}
+            className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium border border-gray-5 rounded-full text-dark hover:border-dark transition-colors disabled:opacity-50"
+          >
             <MessageCircle className="w-3.5 h-3.5" />
-            Discuter
+            {chatLoading ? '...' : 'Discuter'}
           </button>
-          <button className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium bg-dark text-white rounded-full hover:bg-gray-1 transition-colors">
+          <button
+            onClick={handleChat}
+            disabled={chatLoading}
+            className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium bg-dark text-white rounded-full hover:bg-gray-1 transition-colors disabled:opacity-50"
+          >
             <Mail className="w-3.5 h-3.5" />
-            Contacter
+            {chatLoading ? '...' : 'Contacter'}
           </button>
         </div>
       </div>
@@ -765,6 +801,7 @@ export default function HomePage() {
 
         const mapped = shops.map((shop: any) => ({
           id: shop.slug || shop.id,
+          ownerId: shop.userId,
           name: shop.name,
           logo: shop.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(shop.name.substring(0,2))}&background=E82328&color=fff&size=60&bold=true`,
           location: [shop.city, getCountryName(shop.country)].filter(Boolean).join(', '),
