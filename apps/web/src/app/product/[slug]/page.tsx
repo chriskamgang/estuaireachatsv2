@@ -735,7 +735,7 @@ export default function ProductDetailPage() {
             {recommendedProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="shrink-0 w-[160px] group">
                 <div className="aspect-square rounded-lg overflow-hidden bg-gray-6 mb-2">
-                  <img src={p.thumbnailUrl || (typeof p.images?.[0] === 'string' ? p.images[0] : p.images?.[0]?.url) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src={p.thumbnailUrl || ((p.images?.[0] as any)?.url ?? p.images?.[0]) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <p className="text-xs text-dark line-clamp-2 leading-tight mb-1">{p.name}</p>
                 <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? p.price ?? 0)}</p>
@@ -998,7 +998,7 @@ export default function ProductDetailPage() {
             {supplierProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                 <div className="aspect-square rounded-lg overflow-hidden bg-gray-6 mb-2">
-                  <img src={p.thumbnailUrl || (typeof p.images?.[0] === 'string' ? p.images[0] : p.images?.[0]?.url) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src={p.thumbnailUrl || ((p.images?.[0] as any)?.url ?? p.images?.[0]) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <p className="text-xs text-dark line-clamp-2 leading-tight mb-1">{p.name}</p>
                 <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? p.price ?? 0)}</p>
