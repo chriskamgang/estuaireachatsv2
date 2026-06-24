@@ -22,16 +22,16 @@ export class AiSourcingService {
       .filter((w) => w.length > 2);
 
     const orConditions: Prisma.ProductWhereInput[] = [
-      { name: { contains: query, mode: 'insensitive' } },
-      { description: { contains: query, mode: 'insensitive' } },
-      { tags: { hasSome: keywords } },
+      { name: { contains: query } },
+      { description: { contains: query } },
+      { tags: { string_contains: keywords[0] || '' } },
     ];
 
     // Also search individual keywords in name/description
     for (const keyword of keywords.slice(0, 5)) {
-      orConditions.push({ name: { contains: keyword, mode: 'insensitive' } });
+      orConditions.push({ name: { contains: keyword } });
       orConditions.push({
-        description: { contains: keyword, mode: 'insensitive' },
+        description: { contains: keyword },
       });
     }
 
@@ -48,8 +48,8 @@ export class AiSourcingService {
       ...(category && {
         category: {
           OR: [
-            { name: { contains: category, mode: 'insensitive' } },
-            { slug: { contains: category, mode: 'insensitive' } },
+            { name: { contains: category } },
+            { slug: { contains: category } },
           ],
         },
       }),

@@ -120,8 +120,8 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = {
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search } },
+          { description: { contains: search } },
         ],
       }),
       ...(categoryId && { categoryId }),
@@ -177,9 +177,9 @@ export class ProductsService {
       },
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-          { tags: { hasSome: [search] } },
+          { name: { contains: search } },
+          { description: { contains: search } },
+          { tags: { string_contains: search } },
         ],
       }),
       ...(categoryId && { categoryId }),

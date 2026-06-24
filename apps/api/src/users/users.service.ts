@@ -137,9 +137,9 @@ export class UsersService {
         status: 'ACTIVE',
         createdAt: { gt: lastSearch.createdAt },
         OR: [
-          { name: { contains: lastSearch.query, mode: 'insensitive' } },
-          { description: { contains: lastSearch.query, mode: 'insensitive' } },
-          { tags: { hasSome: [lastSearch.query] } },
+          { name: { contains: lastSearch.query } },
+          { description: { contains: lastSearch.query } },
+          { tags: { string_contains: lastSearch.query } },
         ],
       },
     });
