@@ -191,6 +191,7 @@ const menuItems: MenuItem[] = [
       { label: 'SMS en masse', href: '/marketing/bulk-sms', icon: Smartphone },
       { label: 'Abonnes', href: '/marketing/subscribers', icon: Bell },
       { label: 'Coupons', href: '/coupons', icon: Ticket },
+      { label: 'Programme de fidelite', href: '/loyalty', icon: Gift },
     ],
   },
 

@@ -33,6 +33,14 @@ export class CouponsController {
     return this.couponsService.getMyCoupons(userId);
   }
 
+  @Get('me/loyalty')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mes coupons de fidelite (BUYER)' })
+  getMyLoyaltyCoupons(@CurrentUser('id') userId: string) {
+    return this.couponsService.getMyLoyaltyCoupons(userId);
+  }
+
   @Post('apply')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

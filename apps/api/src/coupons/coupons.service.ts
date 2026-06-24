@@ -1,16 +1,23 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { UpdateCouponDto } from './dto/update-coupon.dto';
 
 @Injectable()
 export class CouponsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger('CouponsService');
+
+  constructor(
+    private prisma: PrismaService,
+    private settings: SettingsService,
+  ) {}
 
   // ── Buyer: Mes coupons disponibles ────────────────────────
   async getMyCoupons(userId: string) {
@@ -191,6 +198,66 @@ export class CouponsService {
     await this.prisma.coupon.delete({ where: { id: couponId } });
 
     return { result: true, data: null };
+  }
+
+  // ── Loyalty: Generation automatique de coupons fidelite ───
+  async generateLoyaltyCoupon(userId: string) {
+    const loyaltySettings = await this.settings.getLoyaltySettings();
+    if (!loyaltySettings.enabled) return null;
+
+    const totalPaid = await this.prisma.order.count({
+      where: { userId, paymentStatus: 'PAID' },
+    });
+
+    if (totalPaid === 0 || totalPaid % loyaltySettings.ordersRequired !== 0) {
+      return null;
+    }
+
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomPart = '';
+    for (let i = 0; i < 5; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const code = `FIDEL-${randomPart}`;
+
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + loyaltySettings.validityDays);
+
+    const coupon = await this.prisma.coupon.create({
+      data: {
+        userId: null,
+        code,
+        type: 'CART_BASE',
+        discountType: 'PERCENT',
+        discount: loyaltySettings.discountPercent,
+        minBuy: 0,
+        maxDiscount: loyaltySettings.maxDiscount,
+        startDate: now,
+        endDate,
+        details: { loyaltyUserId: userId, ordersAtGeneration: totalPaid },
+      },
+    });
+
+    this.logger.log(`[Loyalty] Coupon ${code} genere pour user ${userId} (${totalPaid} commandes)`);
+    return coupon;
+  }
+
+  // ── Buyer: Mes coupons fidelite ─────────────────────────────
+  async getMyLoyaltyCoupons(userId: string) {
+    const now = new Date();
+
+    const coupons = await this.prisma.coupon.findMany({
+      where: {
+        code: { startsWith: 'FIDEL-' },
+        details: { path: ['loyaltyUserId'], equals: userId },
+        isActive: true,
+        endDate: { gte: now },
+      },
+      orderBy: { endDate: 'asc' },
+    });
+
+    return { result: true, data: coupons };
   }
 
   // ── Admin: Lister tous les coupons ─────────────────────────

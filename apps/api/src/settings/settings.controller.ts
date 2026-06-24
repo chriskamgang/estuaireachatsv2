@@ -130,6 +130,29 @@ export class SettingsController {
     return { result: true, message: enabled ? 'COD active' : 'COD desactive', data };
   }
 
+  // ==================== FIDELITE ====================
+
+  @Get('loyalty')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Voir la configuration du programme de fidelite' })
+  async getLoyaltySettings() {
+    return { result: true, data: await this.settingsService.getLoyaltySettings() };
+  }
+
+  @Patch('loyalty')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modifier la configuration du programme de fidelite' })
+  async updateLoyaltySettings(
+    @Body() dto: { enabled?: boolean; ordersRequired?: number; discountPercent?: number; validityDays?: number; maxDiscount?: number | null },
+  ) {
+    const data = await this.settingsService.updateLoyaltySettings(dto);
+    return { result: true, message: 'Configuration fidelite mise a jour', data };
+  }
+
   // ==================== AI / INTELLIGENCE ARTIFICIELLE ====================
 
   @Get('ai')

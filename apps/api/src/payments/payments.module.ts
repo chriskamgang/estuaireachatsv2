@@ -6,9 +6,10 @@ import { GfsService } from './gfs.service';
 import { SettingsModule } from '../settings/settings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { DeliveryModule } from '../delivery/delivery.module';
+import { CouponsModule } from '../coupons/coupons.module';
 
 @Module({
-  imports: [SettingsModule, NotificationsModule, DeliveryModule],
+  imports: [SettingsModule, NotificationsModule, DeliveryModule, CouponsModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, KPayService, GfsService],
   exports: [PaymentsService, KPayService, GfsService],

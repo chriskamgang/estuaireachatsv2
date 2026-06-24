@@ -264,6 +264,43 @@ export class SettingsService {
     return this.getAiSettings();
   }
 
+  // ==================== FIDELITE ====================
+
+  async getLoyaltySettings() {
+    const [enabled, ordersRequired, discountPercent, validityDays, maxDiscount] = await Promise.all([
+      this.getBool('loyalty_enabled', undefined, true),
+      this.getValue('loyalty_orders_required', undefined, '5'),
+      this.getValue('loyalty_discount_percent', undefined, '2'),
+      this.getValue('loyalty_coupon_validity_days', undefined, '30'),
+      this.getValue('loyalty_max_discount', undefined, ''),
+    ]);
+
+    return {
+      enabled,
+      ordersRequired: parseInt(ordersRequired, 10),
+      discountPercent: parseFloat(discountPercent),
+      validityDays: parseInt(validityDays, 10),
+      maxDiscount: maxDiscount ? parseFloat(maxDiscount) : null,
+    };
+  }
+
+  async updateLoyaltySettings(dto: {
+    enabled?: boolean;
+    ordersRequired?: number;
+    discountPercent?: number;
+    validityDays?: number;
+    maxDiscount?: number | null;
+  }) {
+    if (dto.enabled !== undefined) await this.upsert('loyalty_enabled', String(dto.enabled));
+    if (dto.ordersRequired !== undefined) await this.upsert('loyalty_orders_required', String(dto.ordersRequired));
+    if (dto.discountPercent !== undefined) await this.upsert('loyalty_discount_percent', String(dto.discountPercent));
+    if (dto.validityDays !== undefined) await this.upsert('loyalty_coupon_validity_days', String(dto.validityDays));
+    if (dto.maxDiscount !== undefined) await this.upsert('loyalty_max_discount', dto.maxDiscount !== null ? String(dto.maxDiscount) : '');
+
+    this.logger.log('[Settings] Fidelite mis a jour');
+    return this.getLoyaltySettings();
+  }
+
   // ==================== VUE GLOBALE ====================
 
   async getAllPaymentSettings() {

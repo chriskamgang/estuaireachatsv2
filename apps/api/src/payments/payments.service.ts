@@ -10,6 +10,7 @@ import { KPayService } from './kpay.service';
 import { GfsService } from './gfs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MerciEService } from '../delivery/merci-e.service';
+import { CouponsService } from '../coupons/coupons.service';
 import { InitPaymentDto, PaymentMode } from './dto/init-payment.dto';
 import { PaymentMethod, PaymentStatus, NotificationType } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,6 +25,7 @@ export class PaymentsService {
     private gfs: GfsService,
     private notifications: NotificationsService,
     private merciE: MerciEService,
+    private coupons: CouponsService,
   ) {}
 
   /**
@@ -532,6 +534,13 @@ export class PaymentsService {
         });
         this.logger.log(`[GFS Webhook] Paiement COMPLETE: ${payment.id}`);
         this.notifyPaymentCompleted(payment.orderId, payment.amount).catch(() => {});
+
+        const gfsOrder = await this.prisma.order.findUnique({ where: { id: payment.orderId }, select: { userId: true } });
+        if (gfsOrder?.userId) {
+          this.coupons.generateLoyaltyCoupon(gfsOrder.userId).catch((err) => {
+            this.logger.warn(`[Loyalty] Erreur generation coupon: ${err.message}`);
+          });
+        }
       } else if (event.status === 'FAILED' || event.status === 'EXPIRED') {
         await this.prisma.payment.update({
           where: { id: payment.id },
@@ -648,6 +657,14 @@ export class PaymentsService {
 
       // Notifier le vendeur et les admins
       this.notifyPaymentCompleted(payment.orderId, payment.amount).catch(() => {});
+
+      // Generer un coupon fidelite si applicable
+      const order = await this.prisma.order.findUnique({ where: { id: payment.orderId }, select: { userId: true } });
+      if (order?.userId) {
+        this.coupons.generateLoyaltyCoupon(order.userId).catch((err) => {
+          this.logger.warn(`[Loyalty] Erreur generation coupon: ${err.message}`);
+        });
+      }
 
       return true;
     }
