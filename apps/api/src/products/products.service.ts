@@ -159,7 +159,7 @@ export class ProductsService {
     };
   }
 
-  async findAll(query: ProductQueryDto) {
+  async findAll(query: ProductQueryDto, userId?: string) {
     const { search, categoryId, brandId, shopId, minPrice, maxPrice, sort } = query;
     const page = query.page ?? 1;
     const perPage = query.perPage ?? 20;
@@ -223,6 +223,13 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
+    // Sauvegarder la recherche si l'utilisateur est connecte et qu'il y a un terme de recherche
+    if (userId && search && search.trim().length > 0) {
+      this.saveUserSearch(userId, search.trim(), total).catch(() => {
+        // Fire-and-forget : ne bloque pas la reponse
+      });
+    }
+
     return {
       result: true,
       data: products,
@@ -233,6 +240,30 @@ export class ProductsService {
         lastPage: Math.ceil(total / perPage),
       },
     };
+  }
+
+  /**
+   * Sauvegarde la recherche de l'utilisateur et garde seulement les 10 dernieres.
+   */
+  private async saveUserSearch(userId: string, query: string, resultsCount: number) {
+    // Creer la nouvelle recherche
+    await this.prisma.userSearch.create({
+      data: { userId, query, resultsCount },
+    });
+
+    // Garder seulement les 10 dernieres recherches
+    const searches = await this.prisma.userSearch.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      skip: 10,
+      select: { id: true },
+    });
+
+    if (searches.length > 0) {
+      await this.prisma.userSearch.deleteMany({
+        where: { id: { in: searches.map((s) => s.id) } },
+      });
+    }
   }
 
   async findFeatured() {
@@ -474,7 +505,7 @@ export class ProductsService {
         escCsv(p.brand?.name || ''),
         totalStock.toString(),
         escCsv(skus),
-        escCsv(p.tags.join(';')),
+        escCsv((p.tags as string[] || []).join(';')),
         p.status,
         p.createdAt.toISOString().split('T')[0],
       ].join(',');

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -133,8 +133,8 @@ enum ShipmentType {
 
 model User {
   id              String     @id @default(cuid())
-  email           String?    @unique
-  phone           String?    @unique
+  email           String?    @unique @db.VarChar(255)
+  phone           String?    @unique @db.VarChar(50)
   passwordHash    String
   firstName       String
   lastName        String
@@ -172,8 +172,27 @@ model User {
   deliveryBoy       DeliveryBoy?
   combinedOrders    CombinedOrder[]
   withdrawRequests  WithdrawRequest[] @relation("SellerWithdraws")
+  searches          UserSearch[]
 
   @@map("users")
+}
+
+// ============================================================
+// USER SEARCH (Historique recherches utilisateur)
+// ============================================================
+
+model UserSearch {
+  id           String   @id @default(cuid())
+  userId       String
+  query        String
+  resultsCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("user_searches")
 }
 
 // ============================================================
@@ -184,8 +203,8 @@ model Shop {
   id                String     @id @default(cuid())
   userId            String     @unique
   name              String
-  slug              String     @unique
-  description       String?
+  slug              String     @unique @db.VarChar(255)
+  description       String?    @db.Text
   logo              String?
   banner            String?
   phone             String?
@@ -210,9 +229,9 @@ model Shop {
   staffCount      String?    // ex: "40+ employes"
   factoryArea     String?    // ex: "1 200+ m²"
   annualRevenue   String?    // ex: "634K+ FCFA"
-  capabilities    String[]   // ex: ["Service ODM disponible", "Personnalisation complete"]
-  certifications  String[]   // ex: ["CE", "ISO 9001"]
-  factoryImages   String[]   // URLs of factory/warehouse images
+  capabilities    Json       @default("[]") // ex: ["Service ODM disponible", "Personnalisation complete"]
+  certifications  Json       @default("[]") // ex: ["CE", "ISO 9001"]
+  factoryImages   Json       @default("[]") // URLs of factory/warehouse images
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -257,7 +276,7 @@ model ShopFollower {
 model Category {
   id       String  @id @default(cuid())
   name     String
-  slug     String  @unique
+  slug     String  @unique @db.VarChar(255)
   icon     String?
   image    String?
   parentId String?
@@ -296,7 +315,7 @@ model CategoryTranslation {
 model Brand {
   id   String  @id @default(cuid())
   name String
-  slug String  @unique
+  slug String  @unique @db.VarChar(255)
   logo String?
 
   createdAt DateTime @default(now())
@@ -317,9 +336,9 @@ model Product {
   categoryId    String?
   brandId       String?
   name          String
-  slug          String        @unique
-  description   String?
-  shortDesc     String?
+  slug          String        @unique @db.VarChar(255)
+  description   String?       @db.Text
+  shortDesc     String?       @db.Text
   status        ProductStatus @default(DRAFT)
   mode          ProductMode   @default(BOTH)
   productType   ProductType   @default(PHYSICAL)
@@ -346,10 +365,10 @@ model Product {
   isPublished   Boolean       @default(true)
   addedBy       String        @default("seller") // "admin" or "seller"
   origin         String?       // Pays d'origine/fabrication (code ISO, ex: "CN", "CM")
-  certifications String[]
-  tags           String[]
+  certifications Json         @default("[]")
+  tags           Json         @default("[]")
   choiceOptions  Json?        // variante choices (ex: color, size)
-  colors         String[]
+  colors         Json         @default("[]")
   videoLink      String?
   pdfSpec        String?
   estShippingDays Int?
@@ -500,7 +519,7 @@ model CombinedOrder {
 model Order {
   id                String        @id @default(cuid())
   combinedOrderId   String?
-  orderNumber       String        @unique
+  orderNumber       String        @unique @db.VarChar(255)
   userId            String        // buyer
   sellerId          String        // seller
   addressId         String?
@@ -570,7 +589,7 @@ model OrderDetail {
 
 model Payment {
   id            String        @id @default(cuid())
-  orderId       String        @unique
+  orderId       String        @unique @db.VarChar(255)
   method        PaymentMethod
   amount        Float
   currency      String        @default("XAF")
@@ -578,7 +597,7 @@ model Payment {
   transactionId String?
   providerRef   String?       // KPay reference or PayPal orderId
   kpayId        String?       // KPay payment id (pay_xxx)
-  externalId    String?       @unique // Our unique id sent to KPay
+  externalId    String?       @unique @db.VarChar(255) // Our unique id sent to KPay
   provider      String?       // KPay provider code (MTN_MOMO_CMR, ORANGE_CMR)
   phoneNumber   String?       // Mobile Money phone number
   gatewayUrl    String?       // KPay hosted checkout URL (GATEWAY mode)
@@ -627,7 +646,7 @@ model Address {
 model Country {
   id   String @id @default(cuid())
   name String
-  code String @unique // "CM", "GA", "GQ"
+  code String @unique @db.VarChar(10) // "CM", "GA", "GQ"
 
   states    State[]
   addresses Address[]
@@ -665,8 +684,8 @@ model Review {
   userId     String
   productId  String
   rating     Int     // 1-5
-  comment    String?
-  images     String[]
+  comment    String?   @db.Text
+  images     Json       @default("[]")
   isVerified Boolean @default(false)
   status     Int     @default(0) // 0=pending, 1=approved
 
@@ -705,7 +724,7 @@ model Wishlist {
 model Coupon {
   id           String       @id @default(cuid())
   userId       String?      // seller owner (null = admin coupon)
-  code         String       @unique
+  code         String       @unique @db.VarChar(255)
   type         CouponType   @default(CART_BASE)
   discountType DiscountType @default(PERCENT)
   discount     Float
@@ -804,9 +823,9 @@ model Message {
   conversationId String?
   senderId       String
   receiverId     String
-  content        String
+  content        String  @db.Text
   isRead         Boolean @default(false)
-  attachments    String[]
+  attachments    Json       @default("[]")
 
   createdAt DateTime @default(now())
 
@@ -864,7 +883,7 @@ model RFQ {
   productId   String?
   quantity    Int
   details     String?
-  attachments String[]
+  attachments Json       @default("[]")
   status      RFQStatus @default(PENDING)
   quotedPrice Float?
   quotedAt    DateTime?
@@ -927,7 +946,7 @@ model Shipment {
   order           Order        @relation(fields: [orderId], references: [id])
 
   // Merci E integration
-  merciERequestId String?      @unique  // ID de la request dans Merci E
+  merciERequestId String?      @unique @db.VarChar(255) // ID de la request dans Merci E
   merciEStatus    String?      // pending, accepted, arrived_at_pickup, in_transit, arrived_at_drop, completed, cancelled
 
   // Type de livraison
@@ -1008,7 +1027,7 @@ model ClubPoint {
 model AffiliateUser {
   id            String @id @default(cuid())
   userId        String @unique
-  referralCode  String @unique
+  referralCode  String @unique @db.VarChar(255)
   status        String @default("PENDING") // PENDING, APPROVED, REJECTED
   walletBalance Float  @default(0)
 
@@ -1079,8 +1098,8 @@ model SellerPackagePayment {
 
 model BusinessSetting {
   id    String @id @default(cuid())
-  type  String @unique
-  value String?
+  type  String @unique @db.VarChar(255)
+  value String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1168,7 +1187,7 @@ enum BlogPostStatus {
 model BlogCategory {
   id    String @id @default(cuid())
   name  String
-  slug  String @unique
+  slug  String @unique @db.VarChar(255)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1182,9 +1201,9 @@ model BlogPost {
   id         String         @id @default(cuid())
   categoryId String?
   title      String
-  slug       String         @unique
-  content    String?
-  excerpt    String?
+  slug       String         @unique @db.VarChar(255)
+  content    String?    @db.LongText
+  excerpt    String?    @db.Text
   image      String?
   author     String?
   status     BlogPostStatus @default(DRAFT)
@@ -1218,7 +1237,7 @@ model SupportTicket {
   id          String         @id @default(cuid())
   userId      String
   subject     String
-  description String
+  description String         @db.Text
   status      TicketStatus   @default(OPEN)
   priority    TicketPriority @default(NORMAL)
 
@@ -1247,7 +1266,7 @@ model ProductQuery {
 
 model Subscriber {
   id       String  @id @default(cuid())
-  email    String  @unique
+  email    String  @unique @db.VarChar(255)
   name     String?
   isActive Boolean @default(true)
 
@@ -1259,7 +1278,7 @@ model Subscriber {
 model NewsletterHistory {
   id               String   @id @default(cuid())
   titre            String
-  message          String
+  message          String   @db.Text
   cible            String   // "tous", "clients", "vendeurs"
   type             String   // "email", "push", "both"
   nbDestinataires  Int      @default(0)
@@ -1275,7 +1294,7 @@ model NewsletterHistory {
 
 model Attribute {
   id     String @id @default(cuid())
-  name   String @unique
+  name   String @unique @db.VarChar(255)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

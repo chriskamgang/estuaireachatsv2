@@ -20,6 +20,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -30,9 +31,13 @@ export class ProductsController {
   constructor(private productsService: ProductsService) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Liste paginee des produits avec filtres (public)' })
-  findAll(@Query() query: ProductQueryDto) {
-    return this.productsService.findAll(query);
+  findAll(
+    @Query() query: ProductQueryDto,
+    @CurrentUser('id') userId?: string,
+  ) {
+    return this.productsService.findAll(query, userId);
   }
 
   @Get('admin/all')

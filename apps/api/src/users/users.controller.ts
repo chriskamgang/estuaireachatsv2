@@ -44,6 +44,14 @@ export class UsersController {
     return this.usersService.findOne(userId);
   }
 
+  @Get('me/search-notification')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Notification de nouveaux produits pour la derniere recherche' })
+  getSearchNotification(@CurrentUser('id') userId: string) {
+    return this.usersService.getSearchNotification(userId);
+  }
+
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -116,6 +116,47 @@ export class UsersService {
     return { result: true, data: updated };
   }
 
+  /**
+   * Recupere la derniere recherche de l'utilisateur et compte les nouveaux produits
+   * qui correspondent a cette recherche et qui ont ete crees apres la date de la recherche.
+   */
+  async getSearchNotification(userId: string) {
+    const lastSearch = await this.prisma.userSearch.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!lastSearch) {
+      return { result: true, data: null };
+    }
+
+    // Compter les nouveaux produits qui matchent la recherche et crees apres la date de recherche
+    const newCount = await this.prisma.product.count({
+      where: {
+        isPublished: true,
+        status: 'ACTIVE',
+        createdAt: { gt: lastSearch.createdAt },
+        OR: [
+          { name: { contains: lastSearch.query, mode: 'insensitive' } },
+          { description: { contains: lastSearch.query, mode: 'insensitive' } },
+          { tags: { hasSome: [lastSearch.query] } },
+        ],
+      },
+    });
+
+    if (newCount === 0) {
+      return { result: true, data: null };
+    }
+
+    return {
+      result: true,
+      data: {
+        query: lastSearch.query,
+        newCount,
+      },
+    };
+  }
+
   async updateProfile(userId: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
