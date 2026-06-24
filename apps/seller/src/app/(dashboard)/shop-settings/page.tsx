@@ -1,11 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Settings, Save, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Save, Loader2, AlertCircle, CheckCircle, Plus, X, ImagePlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import dynamic from 'next/dynamic';
 
 const GoogleMapPicker = dynamic(() => import('@/components/ui/GoogleMapPicker'), { ssr: false });
+
+// ── Options predefinies ──────────────────────────────────────
+
+const CAPABILITIES_OPTIONS = [
+  'Service ODM disponible',
+  'Personnalisation complete',
+  'Personnalisation mineure',
+  'Livraison rapide',
+  'Livraison nationale',
+  'Garantie disponible',
+  'Garantie constructeur',
+  'Service apres-vente',
+  'Installation a domicile',
+  'Echantillons disponibles',
+  'Gestion qualite',
+  'Inspection produit fini',
+  'Echange sous 7 jours',
+  'Grandes marques',
+  'Toutes tailles disponibles',
+];
+
+const CERTIFICATIONS_OPTIONS = ['CE', 'ISO 9001', 'ISO 14001', 'FCC', 'RoHS', 'OEKO-TEX', 'SGS'];
+
+const RESPONSE_TIME_OPTIONS = [
+  { value: '<=1h', label: '1h ou moins' },
+  { value: '<=2h', label: '2h ou moins' },
+  { value: '<=4h', label: '4h ou moins' },
+  { value: '<=8h', label: '8h ou moins' },
+  { value: '<=24h', label: '24h ou moins' },
+];
+
+// ── Interface ────────────────────────────────────────────────
 
 interface Shop {
   id: string;
@@ -21,6 +53,9 @@ interface Shop {
   country: string | null;
   latitude: number | null;
   longitude: number | null;
+  yearsActive: number;
+  responseTime: string | null;
+  deliveryRate: number;
   staffCount: string | null;
   factoryArea: string | null;
   annualRevenue: string | null;
@@ -36,12 +71,15 @@ interface Shop {
   stats?: { totalOrders: number; totalRevenue: number };
 }
 
+// ── Composant ────────────────────────────────────────────────
+
 export default function ShopSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [shop, setShop] = useState<Shop | null>(null);
+  const factoryImagesInputRef = useRef<HTMLInputElement>(null);
 
   // Champs du formulaire
   const [form, setForm] = useState({
@@ -52,23 +90,27 @@ export default function ShopSettingsPage() {
     description: '',
     logo: '',
     banner: '',
-    // Champs fabricant
     city: '',
     country: 'CM',
     latitude: null as number | null,
     longitude: null as number | null,
+    // Champs fabricant
     staffCount: '',
     factoryArea: '',
     annualRevenue: '',
-    capabilities: '',
-    certifications: '',
-    factoryImages: '',
+    yearsActive: '',
+    responseTime: '',
+    deliveryRate: '',
     // Champs locaux (pas encore dans l'API)
     facebook: '',
     instagram: '',
     whatsapp: '',
     returnPolicy: '',
   });
+
+  const [capabilities, setCapabilities] = useState<string[]>([]);
+  const [certifications, setCertifications] = useState<string[]>([]);
+  const [factoryImages, setFactoryImages] = useState<string[]>([]);
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -97,10 +139,13 @@ export default function ShopSettingsPage() {
           staffCount: s.staffCount || '',
           factoryArea: s.factoryArea || '',
           annualRevenue: s.annualRevenue || '',
-          capabilities: (s.capabilities || []).join('\n'),
-          certifications: (s.certifications || []).join(', '),
-          factoryImages: (s.factoryImages || []).join('\n'),
+          yearsActive: s.yearsActive ? String(s.yearsActive) : '',
+          responseTime: s.responseTime || '',
+          deliveryRate: s.deliveryRate ? String(s.deliveryRate) : '',
         }));
+        setCapabilities(Array.isArray(s.capabilities) ? s.capabilities : []);
+        setCertifications(Array.isArray(s.certifications) ? s.certifications : []);
+        setFactoryImages(Array.isArray(s.factoryImages) ? s.factoryImages : []);
       } catch (err: any) {
         setError(err?.message || 'Impossible de charger les donnees de la boutique');
       } finally {
@@ -110,6 +155,39 @@ export default function ShopSettingsPage() {
     loadShop();
   }, []);
 
+  // ── Factory images handlers ──────────────────────────────────
+  const addFactoryImageFiles = (files: FileList | File[]) => {
+    const fileArr = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (fileArr.length === 0) return;
+    fileArr.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setFactoryImages((prev) => [...prev, dataUrl]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeFactoryImage = (index: number) => {
+    setFactoryImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Capabilities toggle ──────────────────────────────────────
+  const toggleCapability = (cap: string) => {
+    setCapabilities((prev) =>
+      prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]
+    );
+  };
+
+  // ── Certifications toggle ────────────────────────────────────
+  const toggleCertification = (cert: string) => {
+    setCertifications((prev) =>
+      prev.includes(cert) ? prev.filter((c) => c !== cert) : [...prev, cert]
+    );
+  };
+
+  // ── Submit ───────────────────────────────────────────────────
   const handleSave = async () => {
     if (!form.name.trim()) {
       setError('Le nom de la boutique est requis');
@@ -136,9 +214,12 @@ export default function ShopSettingsPage() {
         staffCount: form.staffCount || undefined,
         factoryArea: form.factoryArea || undefined,
         annualRevenue: form.annualRevenue || undefined,
-        capabilities: form.capabilities ? form.capabilities.split('\n').map(s => s.trim()).filter(Boolean) : undefined,
-        certifications: form.certifications ? form.certifications.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-        factoryImages: form.factoryImages ? form.factoryImages.split('\n').map(s => s.trim()).filter(Boolean) : undefined,
+        yearsActive: form.yearsActive ? parseInt(form.yearsActive, 10) : undefined,
+        responseTime: form.responseTime || undefined,
+        deliveryRate: form.deliveryRate ? parseFloat(form.deliveryRate) : undefined,
+        capabilities: capabilities.length > 0 ? capabilities : [],
+        certifications: certifications.length > 0 ? certifications : [],
+        factoryImages: factoryImages.length > 0 ? factoryImages : [],
       };
 
       const res = await api.patch<{ data: Shop }>('/shops/me', payload);
@@ -153,6 +234,7 @@ export default function ShopSettingsPage() {
   };
 
   const inputClass = 'w-full border border-gray-5 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none';
+  const labelClass = 'block text-sm font-medium text-gray-1 mb-1.5';
 
   if (loading) {
     return (
@@ -187,42 +269,49 @@ export default function ShopSettingsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
+          {/* ── Informations generales ────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-bold text-dark mb-4">Informations generales</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Nom de la boutique *</label>
+                <label className={labelClass}>Nom de la boutique *</label>
                 <input type="text" value={form.name} onChange={(e) => update('name', e.target.value)} className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Email de la boutique</label>
+                <label className={labelClass}>Email de la boutique</label>
                 <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="contact@boutique.com" className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Adresse</label>
+                <label className={labelClass}>Adresse</label>
                 <input type="text" value={form.address} onChange={(e) => update('address', e.target.value)} placeholder="Quartier, Ville" className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Telephone</label>
+                <label className={labelClass}>Telephone</label>
                 <input type="tel" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+237 6XX XXX XXX" className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Description</label>
+                <label className={labelClass}>Description</label>
                 <textarea rows={4} value={form.description} onChange={(e) => update('description', e.target.value)} placeholder="Decrivez votre boutique..." className={`${inputClass} resize-none`} />
               </div>
             </div>
           </div>
 
+          {/* ── Informations Fabricant ────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-dark mb-4">Informations fabricant</h2>
+            <h2 className="text-lg font-bold text-dark mb-4">Informations Fabricant</h2>
+            <p className="text-sm text-gray-3 mb-5">Ces informations seront affichees sur votre profil fabricant visible par les acheteurs.</p>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Ville</label>
-                <input type="text" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Douala" className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Pays</label>
-                <input type="text" value={form.country} onChange={(e) => update('country', e.target.value)} placeholder="CM" className={inputClass} />
+              {/* Ville & Pays */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Ville</label>
+                  <input type="text" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Douala" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Pays</label>
+                  <input type="text" value={form.country} onChange={(e) => update('country', e.target.value)} placeholder="CM" className={inputClass} />
+                </div>
               </div>
 
               {/* Google Maps Picker */}
@@ -240,50 +329,164 @@ export default function ShopSettingsPage() {
                   }));
                 }}
               />
-              <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Nombre d&apos;employes</label>
-                <input type="text" value={form.staffCount} onChange={(e) => update('staffCount', e.target.value)} placeholder="Ex: 40+ employes" className={inputClass} />
+
+              {/* Nombre d'employes & Surface */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Nombre d&apos;employes</label>
+                  <input type="text" value={form.staffCount} onChange={(e) => update('staffCount', e.target.value)} placeholder="Ex: 10+ employes" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Surface usine/atelier</label>
+                  <input type="text" value={form.factoryArea} onChange={(e) => update('factoryArea', e.target.value)} placeholder="Ex: 150+ m2" className={inputClass} />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Surface usine/entrepot</label>
-                <input type="text" value={form.factoryArea} onChange={(e) => update('factoryArea', e.target.value)} placeholder="Ex: 1 200+ m²" className={inputClass} />
+
+              {/* CA annuel & Annees d'activite */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Chiffre d&apos;affaires annuel</label>
+                  <input type="text" value={form.annualRevenue} onChange={(e) => update('annualRevenue', e.target.value)} placeholder="Ex: 18M+ FCFA" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Annees d&apos;activite</label>
+                  <input type="number" min={0} value={form.yearsActive} onChange={(e) => update('yearsActive', e.target.value)} placeholder="Ex: 5" className={inputClass} />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Chiffre d&apos;affaires annuel</label>
-                <input type="text" value={form.annualRevenue} onChange={(e) => update('annualRevenue', e.target.value)} placeholder="Ex: 634K+ FCFA" className={inputClass} />
+
+              {/* Temps de reponse & Taux de livraison */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Temps de reponse</label>
+                  <select value={form.responseTime} onChange={(e) => update('responseTime', e.target.value)} className={inputClass}>
+                    <option value="">-- Selectionner --</option>
+                    {RESPONSE_TIME_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Taux de livraison a temps</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={form.deliveryRate}
+                      onChange={(e) => update('deliveryRate', e.target.value)}
+                      placeholder="Ex: 98.5"
+                      className={inputClass}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-3 pointer-events-none">%</span>
+                  </div>
+                </div>
               </div>
+
+              {/* Capacites — checkboxes */}
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Capacites</label>
-                <textarea rows={3} value={form.capabilities} onChange={(e) => update('capabilities', e.target.value)} placeholder={"Service ODM disponible\nPersonnalisation complete"} className={`${inputClass} resize-none`} />
-                <p className="text-xs text-gray-3 mt-1">Une capacite par ligne</p>
+                <label className={labelClass}>Capacites</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                  {CAPABILITIES_OPTIONS.map((cap) => (
+                    <label key={cap} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={capabilities.includes(cap)}
+                        onChange={() => toggleCapability(cap)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary/20 cursor-pointer"
+                      />
+                      <span className="text-sm text-gray-2 group-hover:text-dark">{cap}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
+
+              {/* Certifications — tags toggle */}
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Certifications</label>
-                <input type="text" value={form.certifications} onChange={(e) => update('certifications', e.target.value)} placeholder="CE, ISO 9001" className={inputClass} />
-                <p className="text-xs text-gray-3 mt-1">Separees par des virgules</p>
+                <label className={labelClass}>Certifications</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {CERTIFICATIONS_OPTIONS.map((cert) => {
+                    const active = certifications.includes(cert);
+                    return (
+                      <button
+                        key={cert}
+                        type="button"
+                        onClick={() => toggleCertification(cert)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                          active
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-gray-50 text-gray-2 border-gray-200 hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        {active && <span className="mr-1">&#10003;</span>}
+                        {cert}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Images usine/atelier — upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Images usine</label>
-                <textarea rows={3} value={form.factoryImages} onChange={(e) => update('factoryImages', e.target.value)} placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"} className={`${inputClass} resize-none`} />
-                <p className="text-xs text-gray-3 mt-1">Une URL par ligne</p>
+                <label className={labelClass}>Images usine/atelier</label>
+                <div className="flex flex-wrap gap-3 mt-1">
+                  {factoryImages.map((img, index) => (
+                    <div key={index} className="relative group w-24 h-24">
+                      <img
+                        src={img}
+                        alt={`Usine ${index + 1}`}
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-5"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFactoryImage(index)}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {factoryImages.length < 10 && (
+                    <div
+                      onClick={() => factoryImagesInputRef.current?.click()}
+                      className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary transition text-gray-400 hover:text-primary"
+                    >
+                      <ImagePlus className="w-6 h-6" />
+                      <span className="text-[10px] mt-1">Ajouter</span>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={factoryImagesInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) addFactoryImageFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+                <p className="text-xs text-gray-3 mt-2">JPG, PNG. Maximum 10 images. Photos de votre usine, atelier, entrepot.</p>
               </div>
             </div>
           </div>
 
+          {/* ── Reseaux sociaux ───────────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-bold text-dark mb-4">Reseaux sociaux</h2>
             <p className="text-xs text-gray-3 mb-4">Ces champs seront bientot synchronises avec l&apos;API.</p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Facebook</label>
+                <label className={labelClass}>Facebook</label>
                 <input type="url" value={form.facebook} onChange={(e) => update('facebook', e.target.value)} placeholder="https://facebook.com/..." className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">Instagram</label>
+                <label className={labelClass}>Instagram</label>
                 <input type="url" value={form.instagram} onChange={(e) => update('instagram', e.target.value)} placeholder="https://instagram.com/..." className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-1 mb-1.5">WhatsApp</label>
+                <label className={labelClass}>WhatsApp</label>
                 <input type="tel" value={form.whatsapp} onChange={(e) => update('whatsapp', e.target.value)} placeholder="+237..." className={inputClass} />
               </div>
             </div>
@@ -291,6 +494,7 @@ export default function ShopSettingsPage() {
         </div>
 
         <div className="space-y-6">
+          {/* ── Logo ─────────────────────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-bold text-dark mb-4">Logo de la boutique</h2>
             {form.logo && (
@@ -305,6 +509,7 @@ export default function ShopSettingsPage() {
             </div>
           </div>
 
+          {/* ── Banniere ─────────────────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-bold text-dark mb-4">Banniere</h2>
             {form.banner && (
@@ -319,12 +524,14 @@ export default function ShopSettingsPage() {
             </div>
           </div>
 
+          {/* ── Politique de retour ──────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-bold text-dark mb-4">Politique de retour</h2>
             <textarea rows={4} value={form.returnPolicy} onChange={(e) => update('returnPolicy', e.target.value)} placeholder="Decrivez votre politique de retour..." className={`${inputClass} resize-none`} />
             <p className="text-xs text-gray-3 mt-1">Ce champ sera bientot synchronise avec l&apos;API.</p>
           </div>
 
+          {/* ── Bouton sauvegarder ───────────────────────────── */}
           <button
             onClick={handleSave}
             disabled={saving}

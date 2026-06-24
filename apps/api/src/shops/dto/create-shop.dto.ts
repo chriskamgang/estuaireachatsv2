@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsArray, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsArray, IsNumber, IsInt } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateShopDto {
@@ -66,6 +66,21 @@ export class CreateShopDto {
   @IsString()
   @IsOptional()
   annualRevenue?: string;
+
+  @ApiPropertyOptional({ example: 5, description: 'Nombre d\'annees d\'activite' })
+  @IsInt()
+  @IsOptional()
+  yearsActive?: number;
+
+  @ApiPropertyOptional({ example: '<=1h', description: 'Temps de reponse moyen' })
+  @IsString()
+  @IsOptional()
+  responseTime?: string;
+
+  @ApiPropertyOptional({ example: 98.5, description: 'Taux de livraison a temps (%)' })
+  @IsNumber()
+  @IsOptional()
+  deliveryRate?: number;
 
   @ApiPropertyOptional({ example: ['Service ODM disponible', 'Personnalisation complete'], description: 'Capacites de production' })
   @IsArray()

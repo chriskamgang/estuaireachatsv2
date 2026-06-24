@@ -232,6 +232,9 @@ export class ShopsService {
         ...(dto.capabilities !== undefined && { capabilities: dto.capabilities }),
         ...(dto.certifications !== undefined && { certifications: dto.certifications }),
         ...(dto.factoryImages !== undefined && { factoryImages: dto.factoryImages }),
+        ...(dto.yearsActive !== undefined && { yearsActive: dto.yearsActive }),
+        ...(dto.responseTime !== undefined && { responseTime: dto.responseTime }),
+        ...(dto.deliveryRate !== undefined && { deliveryRate: dto.deliveryRate }),
       },
     });
     return { result: true, data: updated };
