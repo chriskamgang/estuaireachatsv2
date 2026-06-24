@@ -738,7 +738,7 @@ export default function ProductDetailPage() {
                   <img src={p.thumbnailUrl || ((p.images?.[0] as any)?.url ?? p.images?.[0]) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <p className="text-xs text-dark line-clamp-2 leading-tight mb-1">{p.name}</p>
-                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? p.price ?? 0)}</p>
+                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? (p as any).price ?? 0)}</p>
                 <p className="text-[11px] text-gray-3">MOQ: {p.moq || 1} pieces</p>
               </Link>
             ))}
@@ -1001,7 +1001,7 @@ export default function ProductDetailPage() {
                   <img src={p.thumbnailUrl || ((p.images?.[0] as any)?.url ?? p.images?.[0]) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <p className="text-xs text-dark line-clamp-2 leading-tight mb-1">{p.name}</p>
-                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? p.price ?? 0)}</p>
+                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? (p as any).price ?? 0)}</p>
               </Link>
             ))}
           </div>
