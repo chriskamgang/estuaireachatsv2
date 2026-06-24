@@ -70,6 +70,7 @@ export default function ProductDetailPage() {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>({});
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState('attributes');
   const [addingToCart, setAddingToCart] = useState(false);
@@ -245,7 +246,7 @@ export default function ProductDetailPage() {
                       selectedImage === i ? 'border-orange' : 'border-gray-5 hover:border-gray-4'
                     }`}
                   >
-                    <img src={img} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={typeof img === 'string' ? img : img.url} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
                 {product.images.length > 5 && (
@@ -257,7 +258,7 @@ export default function ProductDetailPage() {
               {/* Main Image */}
               <div className="relative flex-1 aspect-square rounded-lg overflow-hidden bg-gray-6">
                 <img
-                  src={product.images[selectedImage] || product.thumbnailUrl}
+                  src={(typeof product.images[selectedImage] === 'string' ? product.images[selectedImage] : product.images[selectedImage]?.url) || product.thumbnailUrl}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -490,6 +491,36 @@ export default function ProductDetailPage() {
                 );
               })()}
 
+              {/* Variants / Choice Options (Pointure, Couleur, etc.) */}
+              {product.choiceOptions && Array.isArray(product.choiceOptions) && product.choiceOptions.length > 0 && (
+                <div className="mb-5 space-y-3">
+                  {product.choiceOptions.map((choice: any, ci: number) => (
+                    <div key={ci}>
+                      <h4 className="text-sm font-semibold text-dark mb-2">{choice.name}</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(choice.options || []).map((opt: string) => {
+                          const stateKey = `choice_${ci}`;
+                          const isSelected = (selectedChoices[stateKey] || choice.options[0]) === opt;
+                          return (
+                            <button
+                              key={opt}
+                              onClick={() => setSelectedChoices(prev => ({ ...prev, [stateKey]: opt }))}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                                isSelected
+                                  ? 'border-orange bg-orange/10 text-orange'
+                                  : 'border-gray-5 text-gray-2 hover:border-orange hover:text-orange'
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Quantity (in center like Alibaba) */}
               <div className="mb-6">
                 <h4 className="text-sm font-semibold text-dark mb-2">Quantite</h4>
@@ -704,11 +735,11 @@ export default function ProductDetailPage() {
             {recommendedProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="shrink-0 w-[160px] group">
                 <div className="aspect-square rounded-lg overflow-hidden bg-gray-6 mb-2">
-                  <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src={p.thumbnailUrl || (p.images?.[0]?.url || p.images?.[0]) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <p className="text-xs text-dark line-clamp-2 leading-tight mb-1">{p.name}</p>
-                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin)}</p>
-                <p className="text-[11px] text-gray-3">MOQ: {p.moq} pieces</p>
+                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? p.price ?? 0)}</p>
+                <p className="text-[11px] text-gray-3">MOQ: {p.moq || 1} pieces</p>
               </Link>
             ))}
           </div>
@@ -848,7 +879,7 @@ export default function ProductDetailPage() {
               )}
               <div className="space-y-4">
                 <div className="bg-gray-6 rounded-lg p-4 text-center">
-                  <img src={product.images[0] || product.thumbnailUrl} alt={product.name} className="max-w-[400px] mx-auto rounded-lg" />
+                  <img src={(typeof product.images[0] === 'string' ? product.images[0] : product.images[0]?.url) || product.thumbnailUrl} alt={product.name} className="max-w-[400px] mx-auto rounded-lg" />
                 </div>
                 <div className="text-sm text-gray-2 leading-relaxed space-y-3">
                   <p><strong className="text-dark">Qualite superieure :</strong> Fabrique a partir de materiaux de premiere qualite, ce produit repond aux normes internationales les plus strictes.</p>
@@ -857,7 +888,7 @@ export default function ProductDetailPage() {
                 </div>
                 {product.images.length > 1 && (
                   <div className="bg-gray-6 rounded-lg p-4 text-center">
-                    <img src={product.images[1]} alt={`${product.name} detail`} className="max-w-[400px] mx-auto rounded-lg" />
+                    <img src={typeof product.images[1] === 'string' ? product.images[1] : product.images[1]?.url} alt={`${product.name} detail`} className="max-w-[400px] mx-auto rounded-lg" />
                   </div>
                 )}
               </div>
@@ -967,10 +998,10 @@ export default function ProductDetailPage() {
             {supplierProducts.map((p) => (
               <Link key={p.id} href={`/product/${p.slug}`} className="group">
                 <div className="aspect-square rounded-lg overflow-hidden bg-gray-6 mb-2">
-                  <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src={p.thumbnailUrl || (p.images?.[0]?.url || p.images?.[0]) || ''} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <p className="text-xs text-dark line-clamp-2 leading-tight mb-1">{p.name}</p>
-                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin)}</p>
+                <p className="text-sm font-bold text-dark">{formatPrice(p.priceMin ?? p.price ?? 0)}</p>
               </Link>
             ))}
           </div>

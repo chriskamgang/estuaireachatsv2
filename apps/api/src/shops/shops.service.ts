@@ -39,7 +39,7 @@ export class ShopsService {
   }
 
   async findBySlug(slug: string) {
-    const shop = await this.prisma.shop.findUnique({
+    let shop = await this.prisma.shop.findUnique({
       where: { slug },
       include: {
         user: { select: { role: true } },
@@ -54,6 +54,24 @@ export class ShopsService {
         _count: { select: { products: true, followers: true } },
       },
     });
+    // Fallback: chercher par ID si le slug n'a rien donne
+    if (!shop) {
+      shop = await this.prisma.shop.findUnique({
+        where: { id: slug },
+        include: {
+          user: { select: { role: true } },
+          products: {
+            where: { status: 'ACTIVE', isPublished: true },
+            include: {
+              images: { where: { isMain: true }, take: 1 },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+          },
+          _count: { select: { products: true, followers: true } },
+        },
+      });
+    }
     if (!shop) throw new NotFoundException('Boutique introuvable');
 
     // Boutique sans package paye et non-admin = invisible
@@ -271,6 +289,7 @@ export class ShopsService {
     city?: string;
     logo?: string;
     banner?: string;
+    factoryImages?: string[];
     userId?: string;
     sellerEmail?: string;
     sellerFirstName?: string;
@@ -333,6 +352,7 @@ export class ShopsService {
         city: dto.city || null,
         logo: dto.logo || null,
         banner: dto.banner || null,
+        factoryImages: dto.factoryImages || [],
         status: 'ACTIVE',
         verified: true,
         verifiedAt: new Date(),

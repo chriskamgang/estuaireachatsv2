@@ -764,7 +764,7 @@ export default function HomePage() {
         if (shops.length === 0) return; // keep mock data
 
         const mapped = shops.map((shop: any) => ({
-          id: shop.id,
+          id: shop.slug || shop.id,
           name: shop.name,
           logo: shop.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(shop.name.substring(0,2))}&background=E82328&color=fff&size=60&bold=true`,
           location: [shop.city, getCountryName(shop.country)].filter(Boolean).join(', '),
@@ -870,12 +870,14 @@ export default function HomePage() {
     }
   };
 
-  // Pagination handler for recommended products
-  const fetchRecommendedPage = (page: number) => {
+  // Infinite scroll: load next page and append products
+  const fetchNextRecommendedPage = () => {
+    if (recPageLoading || recCurrentPage >= recTotalPages) return;
     setRecPageLoading(true);
-    api.get<{ data: Product[]; meta?: { total: number; page: number; perPage: number; lastPage: number } }>(`/products?perPage=${REC_PER_PAGE}&page=${page}`)
+    const nextPage = recCurrentPage + 1;
+    api.get<{ data: Product[]; meta?: { total: number; page: number; perPage: number; lastPage: number } }>(`/products?perPage=${REC_PER_PAGE}&page=${nextPage}`)
       .then(res => {
-        setRecommendedProducts(res.data || []);
+        setRecommendedProducts(prev => [...prev, ...(res.data || [])]);
         if ((res as any).meta) {
           const meta = (res as any).meta;
           setRecTotalProducts(meta.total || 0);
@@ -883,11 +885,26 @@ export default function HomePage() {
           setRecCurrentPage(meta.page || 1);
         }
         setRecPageLoading(false);
-        // Scroll to the recommended section
-        document.getElementById('recommended-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       })
       .catch(() => setRecPageLoading(false));
   };
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    if (productsLoading) return;
+    const sentinel = document.getElementById('rec-scroll-sentinel');
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextRecommendedPage();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [productsLoading, recCurrentPage, recTotalPages, recPageLoading]);
 
   const toggleFilter = (filter: string) => {
     setActiveFilters((prev) =>
@@ -2051,54 +2068,17 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Pagination */}
-            {recTotalPages > 1 && !productsLoading && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <button
-                  onClick={() => fetchRecommendedPage(recCurrentPage - 1)}
-                  disabled={recCurrentPage <= 1}
-                  className="px-3 py-2 rounded-lg text-[13px] font-medium border border-gray-5 text-gray-2 hover:border-orange hover:text-orange transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                {Array.from({ length: recTotalPages }, (_, i) => i + 1)
-                  .filter(page => {
-                    // Show first, last, current, and nearby pages
-                    if (page === 1 || page === recTotalPages) return true;
-                    if (Math.abs(page - recCurrentPage) <= 2) return true;
-                    return false;
-                  })
-                  .reduce<(number | string)[]>((acc, page, idx, arr) => {
-                    if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
-                      acc.push('...');
-                    }
-                    acc.push(page);
-                    return acc;
-                  }, [])
-                  .map((item, idx) =>
-                    item === '...' ? (
-                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-3 text-[13px]">...</span>
-                    ) : (
-                      <button
-                        key={item}
-                        onClick={() => fetchRecommendedPage(item as number)}
-                        className={`w-9 h-9 rounded-lg text-[13px] font-medium transition-colors ${
-                          recCurrentPage === item
-                            ? 'bg-orange text-white'
-                            : 'border border-gray-5 text-gray-2 hover:border-orange hover:text-orange'
-                        }`}
-                      >
-                        {item}
-                      </button>
-                    )
-                  )}
-                <button
-                  onClick={() => fetchRecommendedPage(recCurrentPage + 1)}
-                  disabled={recCurrentPage >= recTotalPages}
-                  className="px-3 py-2 rounded-lg text-[13px] font-medium border border-gray-5 text-gray-2 hover:border-orange hover:text-orange transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+            {/* Infinite scroll sentinel */}
+            {recCurrentPage < recTotalPages && !productsLoading && (
+              <div id="rec-scroll-sentinel" className="flex items-center justify-center py-8">
+                {recPageLoading ? (
+                  <div className="flex items-center gap-2 text-gray-3 text-sm">
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                    Chargement...
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-4">Scroll pour voir plus</span>
+                )}
               </div>
             )}
           </div>

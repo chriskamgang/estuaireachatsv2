@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Store, Plus, Eye, Star, CheckCircle, XCircle, X, Loader2 } from 'lucide-react';
+import { Store, Plus, Eye, Star, CheckCircle, XCircle, X, Loader2, Image, Trash2 } from 'lucide-react';
 import DataTable, { Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { formatDate } from '@/lib/utils';
@@ -32,9 +32,12 @@ function CreateShopModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     name: '', description: '', phone: '', email: '', address: '', city: '',
+    logo: '', banner: '',
     sellerEmail: '', sellerFirstName: '', sellerLastName: '', sellerPhone: '', sellerPassword: '',
     userId: '',
   });
+  const [factoryImages, setFactoryImages] = useState<string[]>([]);
+  const [newFactoryUrl, setNewFactoryUrl] = useState('');
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
   const inputClass = 'w-full border border-gray-5 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none';
@@ -58,6 +61,9 @@ function CreateShopModal({ onClose, onCreated }: { onClose: () => void; onCreate
         email: form.email || undefined,
         address: form.address || undefined,
         city: form.city || undefined,
+        logo: form.logo || undefined,
+        banner: form.banner || undefined,
+        factoryImages: factoryImages.length > 0 ? factoryImages : undefined,
       };
 
       if (mode === 'new') {
@@ -118,6 +124,75 @@ function CreateShopModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <div>
                 <label className="block text-xs font-medium text-gray-2 mb-1">Adresse</label>
                 <input value={form.address} onChange={(e) => update('address', e.target.value)} className={inputClass} placeholder="Akwa, Rue..." />
+              </div>
+            </div>
+          </div>
+
+          {/* Images */}
+          <div>
+            <h3 className="text-sm font-semibold text-dark mb-3">Images</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-2 mb-1">Logo (URL)</label>
+                <input value={form.logo} onChange={(e) => update('logo', e.target.value)} className={inputClass} placeholder="https://..." />
+                {form.logo && <img src={form.logo} alt="logo" className="w-12 h-12 rounded-lg object-cover mt-1.5" />}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-2 mb-1">Banniere (URL)</label>
+                <input value={form.banner} onChange={(e) => update('banner', e.target.value)} className={inputClass} placeholder="https://..." />
+                {form.banner && <img src={form.banner} alt="banner" className="w-full h-12 rounded-lg object-cover mt-1.5" />}
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-2 mb-1">
+                  <Image className="w-3.5 h-3.5 inline mr-1" />
+                  Images usine / structure (carousel)
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    value={newFactoryUrl}
+                    onChange={(e) => setNewFactoryUrl(e.target.value)}
+                    className={inputClass}
+                    placeholder="URL de l'image..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newFactoryUrl.trim()) {
+                          setFactoryImages((prev) => [...prev, newFactoryUrl.trim()]);
+                          setNewFactoryUrl('');
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newFactoryUrl.trim()) {
+                        setFactoryImages((prev) => [...prev, newFactoryUrl.trim()]);
+                        setNewFactoryUrl('');
+                      }
+                    }}
+                    className="shrink-0 px-3 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                {factoryImages.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {factoryImages.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img src={url} alt={`Usine ${i + 1}`} className="w-16 h-16 rounded-lg object-cover border border-gray-5" />
+                        <button
+                          type="button"
+                          onClick={() => setFactoryImages((prev) => prev.filter((_, j) => j !== i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-gray-3 mt-1">Ajoutez les URLs des images de votre usine/structure. Appuyez Entree ou cliquez + pour ajouter.</p>
               </div>
             </div>
           </div>

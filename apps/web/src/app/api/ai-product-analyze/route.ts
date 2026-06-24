@@ -1,18 +1,37 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || '';
+async function getAnthropicKey(): Promise<string> {
+  try {
+    const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.key) return data.key;
+    }
+  } catch {}
+  return process.env.ANTHROPIC_API_KEY || '';
+}
+
+async function getUnsplashKey(): Promise<string> {
+  try {
+    const res = await fetch(`${API_URL}/settings/ai/unsplash-key`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.key) return data.key;
+    }
+  } catch {}
+  return process.env.UNSPLASH_ACCESS_KEY || '';
+}
 
 async function searchUnsplash(query: string, count = 5): Promise<string[]> {
-  if (!UNSPLASH_ACCESS_KEY) return [];
+  const unsplashKey = await getUnsplashKey();
+  if (!unsplashKey) return [];
   try {
     const res = await fetch(
       `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&orientation=squarish`,
-      { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } }
+      { headers: { Authorization: `Client-ID ${unsplashKey}` } }
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -24,12 +43,15 @@ async function searchUnsplash(query: string, count = 5): Promise<string[]> {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'sk-ant-your-key-here') {
+    const apiKey = await getAnthropicKey();
+    if (!apiKey || apiKey === 'sk-ant-your-key-here') {
       return NextResponse.json(
-        { error: 'Cle API Anthropic non configuree' },
+        { error: 'Cle API Anthropic non configuree. Configurez-la dans Admin > Parametres > IA.' },
         { status: 500 }
       );
     }
+
+    const client = new Anthropic({ apiKey });
 
     const { image, mimeType } = await req.json();
 

@@ -1,9 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+async function getAnthropicKey(): Promise<string> {
+  try {
+    const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.key) return data.key;
+    }
+  } catch {}
+  return process.env.ANTHROPIC_API_KEY || '';
+}
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA de sourcing d'EstuaireAchats, une plateforme e-commerce B2B panafricaine (clone d'Alibaba).
 
@@ -42,12 +51,15 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
-    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'sk-ant-your-key-here') {
+    const apiKey = await getAnthropicKey();
+    if (!apiKey || apiKey === 'sk-ant-your-key-here') {
       return NextResponse.json(
-        { error: 'Cle API Anthropic non configuree. Ajoutez ANTHROPIC_API_KEY dans .env.local' },
+        { error: 'Cle API Anthropic non configuree. Configurez-la dans Admin > Parametres > IA.' },
         { status: 500 }
       );
     }
+
+    const client = new Anthropic({ apiKey });
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',

@@ -73,9 +73,15 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (activeTab === 'ia') {
-      fetch('http://localhost:3000/api/admin/ai-config')
-        .then((r) => r.json())
-        .then((data) => setAiStatus(data))
+      api.get<{ data: { hasAnthropicKey: boolean; anthropicKey: string; hasUnsplashKey: boolean; unsplashKey: string } }>('/settings/ai')
+        .then(res => {
+          setAiStatus({
+            hasKey: res.data.hasAnthropicKey,
+            maskedKey: res.data.anthropicKey,
+            hasUnsplashKey: res.data.hasUnsplashKey,
+            maskedUnsplashKey: res.data.unsplashKey,
+          });
+        })
         .catch(() => setAiStatus(null));
     }
   }, [activeTab]);
@@ -86,27 +92,22 @@ export default function SettingsPage() {
     setAiError('');
     try {
       const body: Record<string, string> = {};
-      if (anthropicKey.trim()) body.apiKey = anthropicKey;
+      if (anthropicKey.trim()) body.anthropicKey = anthropicKey;
       if (unsplashKey.trim()) body.unsplashKey = unsplashKey;
 
-      const res = await fetch('http://localhost:3000/api/admin/ai-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      const res = await api.patch<{ data: { hasAnthropicKey: boolean; anthropicKey: string; hasUnsplashKey: boolean; unsplashKey: string } }>('/settings/ai', body);
+      setAnthropicKey('');
+      setUnsplashKey('');
+      setSaved('ia');
+      setTimeout(() => setSaved(null), 3000);
+      setAiStatus({
+        hasKey: res.data.hasAnthropicKey,
+        maskedKey: res.data.anthropicKey,
+        hasUnsplashKey: res.data.hasUnsplashKey,
+        maskedUnsplashKey: res.data.unsplashKey,
       });
-      const data = await res.json();
-      if (data.error) {
-        setAiError(data.error);
-      } else {
-        setAnthropicKey('');
-        setUnsplashKey('');
-        setSaved('ia');
-        setTimeout(() => setSaved(null), 3000);
-        const status = await fetch('http://localhost:3000/api/admin/ai-config').then((r) => r.json());
-        setAiStatus(status);
-      }
     } catch {
-      setAiError('Impossible de contacter le serveur web (localhost:3000).');
+      setAiError('Erreur lors de la sauvegarde. Verifiez votre connexion.');
     }
     setAiSaving(false);
   };
@@ -459,8 +460,8 @@ export default function SettingsPage() {
               </button>
 
               {saved === 'ia' && (
-                <p className="text-xs text-orange-600 bg-orange-50 p-3 rounded-lg">
-                  Configuration sauvegardee. Redemarrez le serveur web (port 3000) pour appliquer les modifications.
+                <p className="text-xs text-green-600 bg-green-50 p-3 rounded-lg">
+                  Configuration IA sauvegardee avec succes.
                 </p>
               )}
             </div>

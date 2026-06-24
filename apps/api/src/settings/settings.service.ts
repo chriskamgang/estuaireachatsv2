@@ -37,6 +37,8 @@ const SENSITIVE_KEYS = new Set([
   'gfs_api_secret',
   'paypal_client_id',
   'paypal_client_secret',
+  'anthropic_api_key',
+  'unsplash_access_key',
 ]);
 
 @Injectable()
@@ -233,6 +235,33 @@ export class SettingsService {
   async setCodEnabled(enabled: boolean) {
     await this.upsert('cod_enabled', String(enabled));
     return { enabled };
+  }
+
+  // ==================== AI / INTELLIGENCE ARTIFICIELLE ====================
+
+  async getAiSettings() {
+    const [anthropicKey, unsplashKey] = await Promise.all([
+      this.getValue('anthropic_api_key', 'ANTHROPIC_API_KEY'),
+      this.getValue('unsplash_access_key', 'UNSPLASH_ACCESS_KEY'),
+    ]);
+
+    return {
+      anthropicKey: this.mask(anthropicKey),
+      unsplashKey: this.mask(unsplashKey),
+      hasAnthropicKey: !!anthropicKey && anthropicKey !== 'sk-ant-your-key-here',
+      hasUnsplashKey: !!unsplashKey && unsplashKey !== 'your-unsplash-access-key-here',
+    };
+  }
+
+  async updateAiSettings(dto: {
+    anthropicKey?: string;
+    unsplashKey?: string;
+  }) {
+    if (dto.anthropicKey !== undefined) await this.upsert('anthropic_api_key', dto.anthropicKey);
+    if (dto.unsplashKey !== undefined) await this.upsert('unsplash_access_key', dto.unsplashKey);
+
+    this.logger.log('[Settings] AI settings mis a jour');
+    return this.getAiSettings();
   }
 
   // ==================== VUE GLOBALE ====================

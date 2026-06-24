@@ -130,6 +130,43 @@ export class SettingsController {
     return { result: true, message: enabled ? 'COD active' : 'COD desactive', data };
   }
 
+  // ==================== AI / INTELLIGENCE ARTIFICIELLE ====================
+
+  @Get('ai')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Voir la configuration IA (Anthropic + Unsplash)' })
+  async getAiSettings() {
+    return { result: true, data: await this.settingsService.getAiSettings() };
+  }
+
+  @Patch('ai')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modifier la configuration IA' })
+  async updateAiSettings(@Body() dto: { anthropicKey?: string; unsplashKey?: string }) {
+    const data = await this.settingsService.updateAiSettings(dto);
+    return { result: true, message: 'Configuration IA mise a jour', data };
+  }
+
+  // ==================== AI INTERNAL (for web app AI routes) ====================
+
+  @Get('ai/key')
+  @ApiOperation({ summary: 'Recuperer la cle Anthropic (usage interne web)' })
+  async getAnthropicKey() {
+    const key = await this.settingsService.getValue('anthropic_api_key', 'ANTHROPIC_API_KEY');
+    return { key: key || '' };
+  }
+
+  @Get('ai/unsplash-key')
+  @ApiOperation({ summary: 'Recuperer la cle Unsplash (usage interne web)' })
+  async getUnsplashKey() {
+    const key = await this.settingsService.getValue('unsplash_access_key', 'UNSPLASH_ACCESS_KEY');
+    return { key: key || '' };
+  }
+
   // ==================== SELLER SETTINGS ====================
 
   @Get('seller/:key')
