@@ -345,6 +345,8 @@ model Product {
   minOrderQty   Int           @default(1)
   unit          String        @default("piece")
   price         Float?        // base price
+  priceMin      Float?        // prix minimum (range)
+  priceMax      Float?        // prix maximum (range)
   cost          Float?        // cost price
   taxType       String?       // "percent" or "amount"
   tax           Float         @default(0)

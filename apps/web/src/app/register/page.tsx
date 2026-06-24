@@ -66,7 +66,7 @@ function RegisterContent() {
         phone: phone || undefined,
         role: accountType === 'seller' ? 'SELLER' : 'BUYER',
       });
-      router.push(accountType === 'seller' ? 'http://localhost:3003/dashboard' : '/');
+      router.push(accountType === 'seller' ? (process.env.NEXT_PUBLIC_SELLER_URL || 'https://seller.estuaireachats.com') + '/dashboard' : '/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erreur lors de l'inscription";
       setError(message);

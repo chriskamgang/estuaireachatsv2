@@ -932,6 +932,8 @@ async function main() {
         slug,
         description: `${p.name}. Produit de qualite superieure disponible sur EstuaireAchats. Livraison rapide au Cameroun.`,
         price: p.price,
+        priceMin: p.moq > 1 ? Math.round(p.price * 0.7) : p.price,
+        priceMax: p.price,
         minOrderQty: p.moq,
         origin: p.origin,
         totalSold: p.sold,
@@ -958,7 +960,22 @@ async function main() {
       });
     }
 
-    console.log(`  [OK] ${p.name} (${p.price} FCFA)`);
+    // Add price tiers seulement pour les produits en gros (moq > 1)
+    if (p.moq > 1) {
+      const tier1Price = p.price;
+      const tier2Price = Math.round(p.price * 0.85);
+      const tier3Price = Math.round(p.price * 0.7);
+      await prisma.priceTier.createMany({
+        data: [
+          { productId: product.id, minQty: 1, maxQty: p.moq - 1, price: tier1Price },
+          { productId: product.id, minQty: p.moq, maxQty: p.moq * 5 - 1, price: tier2Price },
+          { productId: product.id, minQty: p.moq * 5, maxQty: null, price: tier3Price },
+        ],
+      });
+      console.log(`  [OK] ${p.name} (${tier3Price} - ${tier1Price} FCFA)`);
+    } else {
+      console.log(`  [OK] ${p.name} (${p.price} FCFA - prix unique)`);
+    }
   }
 
   console.log('\n--- Identifiants ---');

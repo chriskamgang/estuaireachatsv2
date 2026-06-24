@@ -15,6 +15,8 @@ const productListSelect = {
   name: true,
   slug: true,
   price: true,
+  priceMin: true,
+  priceMax: true,
   discountType: true,
   discount: true,
   discountStart: true,
