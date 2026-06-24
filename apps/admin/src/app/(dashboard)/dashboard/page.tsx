@@ -216,7 +216,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="mois" tick={{ fontSize: 12, fill: '#999' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12, fill: '#999' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
                 <Tooltip
-                  formatter={(value: number) => [formatPrice(value), 'Revenus']}
+                  formatter={(value) => [formatPrice(Number(value)), 'Revenus']}
                   contentStyle={{ borderRadius: 8, border: '1px solid #eee', fontSize: 13 }}
                 />
                 <Area type="monotone" dataKey="montant" stroke="#E82328" strokeWidth={2.5} fill="url(#colorMontant)" />
