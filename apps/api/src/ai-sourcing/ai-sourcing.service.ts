@@ -16,6 +16,119 @@ export class AiSourcingService {
     private httpService: HttpService,
   ) {}
 
+  /**
+   * Recherche assistee par Gemini AI.
+   * Envoie la requete utilisateur a Gemini pour extraire des mots-cles structures,
+   * puis recherche les produits correspondants dans la base.
+   * En cas d'echec de Gemini, retombe sur la recherche textuelle basique.
+   */
+  async aiSearch(dto: {
+    query: string;
+    category?: string;
+    quantity?: number;
+    budgetMin?: number;
+    budgetMax?: number;
+  }) {
+    const { query } = dto;
+
+    try {
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (!geminiKey) {
+        this.logger.warn('GEMINI_API_KEY non configuree, fallback vers recherche basique');
+        return this.search(dto);
+      }
+
+      // Appel a l'API Gemini pour analyser la requete utilisateur
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: query }] }],
+            systemInstruction: {
+              parts: [
+                {
+                  text: `Tu es un assistant de sourcing pour EstuaireAchats, une plateforme e-commerce au Cameroun.
+L'utilisateur cherche des produits ou fournisseurs. Analyse sa demande et reponds en JSON:
+{
+  "keywords": ["mot1", "mot2"],
+  "category": "categorie suggeree ou null",
+  "budgetMin": null,
+  "budgetMax": null,
+  "message": "Un court message utile pour l'utilisateur (2-3 phrases max, en francais)",
+  "suggestions": ["suggestion de recherche 1", "suggestion 2", "suggestion 3"]
+}
+Reponds UNIQUEMENT avec le JSON, sans markdown ni backticks.`,
+                },
+              ],
+            },
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 500,
+            },
+          }),
+        },
+      );
+
+      if (!geminiResponse.ok) {
+        this.logger.error(`Gemini API erreur HTTP ${geminiResponse.status}`);
+        return this.search(dto);
+      }
+
+      const geminiData = await geminiResponse.json();
+      const rawText =
+        geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+
+      // Parser le JSON retourne par Gemini
+      let parsed: {
+        keywords?: string[];
+        category?: string | null;
+        budgetMin?: number | null;
+        budgetMax?: number | null;
+        message?: string;
+        suggestions?: string[];
+      };
+
+      try {
+        parsed = JSON.parse(rawText.trim());
+      } catch {
+        this.logger.warn('Impossible de parser la reponse Gemini, fallback');
+        return this.search(dto);
+      }
+
+      // Construire les parametres de recherche a partir de l'analyse Gemini
+      const searchQuery = (parsed.keywords ?? []).join(' ') || query;
+      const searchDto = {
+        query: searchQuery,
+        category: dto.category || parsed.category || undefined,
+        quantity: dto.quantity,
+        budgetMin: dto.budgetMin ?? parsed.budgetMin ?? undefined,
+        budgetMax: dto.budgetMax ?? parsed.budgetMax ?? undefined,
+      };
+
+      // Recherche produits avec les mots-cles extraits par Gemini
+      const searchResult = await this.search(searchDto);
+
+      return {
+        result: true,
+        data: {
+          aiMessage: parsed.message || null,
+          suggestions: parsed.suggestions || [],
+          products: searchResult.data,
+        },
+        meta: {
+          ...searchResult.meta,
+          aiPowered: true,
+          extractedKeywords: parsed.keywords || [],
+        },
+      };
+    } catch (error) {
+      this.logger.error('Erreur lors de l\'appel Gemini, fallback vers recherche basique', error?.message);
+      return this.search(dto);
+    }
+  }
+
   async search(dto: {
     query: string;
     category?: string;

@@ -25,9 +25,24 @@ export class AiSourcingController {
   constructor(private readonly aiSourcingService: AiSourcingService) {}
 
   @Post('search')
-  @ApiOperation({ summary: 'Recherche intelligente de produits/fournisseurs par IA' })
+  @ApiOperation({ summary: 'Recherche textuelle de produits/fournisseurs' })
   search(@Body() dto: AiSourcingSearchDto) {
     return this.aiSourcingService.search(dto);
+  }
+
+  @Post('ai-search')
+  @ApiOperation({ summary: 'Recherche intelligente de produits assistee par Gemini AI' })
+  aiSearch(
+    @Body()
+    dto: {
+      query: string;
+      category?: string;
+      quantity?: number;
+      budgetMin?: number;
+      budgetMax?: number;
+    },
+  ) {
+    return this.aiSourcingService.aiSearch(dto);
   }
 
   @Post('image-search')
