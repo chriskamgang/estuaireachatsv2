@@ -59,6 +59,7 @@ const productDetailInclude = {
   shop: {
     select: {
       id: true,
+      userId: true,
       name: true,
       slug: true,
       logo: true,

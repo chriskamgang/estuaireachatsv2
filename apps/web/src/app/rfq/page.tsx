@@ -85,24 +85,24 @@ function RfqContent() {
   async function handleSubmit() {
     setSubmitting(true);
     try {
+      const detailsParts = [
+        `Produit: ${productDesc}`,
+        `Categorie: ${category}`,
+        `Quantite: ${quantity} ${unit}`,
+        budgetMin || budgetMax ? `Budget: ${budgetMin || '?'} - ${budgetMax || '?'} FCFA` : '',
+        deliveryDate ? `Livraison souhaitee: ${deliveryDate}` : '',
+        destination ? `Destination: ${destination}` : '',
+        `Contact: ${contactName}, ${contactEmail}${contactPhone ? ', ' + contactPhone : ''}`,
+      ].filter(Boolean).join('\n');
+
       await api.post('/rfq', {
-        productName: productDesc,
-        description: productDesc,
-        category,
-        quantity: Number(quantity),
-        unit,
-        budgetMin: budgetMin ? Number(budgetMin) : undefined,
-        budgetMax: budgetMax ? Number(budgetMax) : undefined,
-        deliveryDate: deliveryDate || undefined,
-        destination,
-        contactName,
-        contactEmail,
-        contactPhone,
+        quantity: Number(quantity) || 1,
+        details: detailsParts,
         ...(productId ? { productId } : {}),
       });
       setSubmitted(true);
-    } catch {
-      setSubmitted(true);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Erreur lors de la soumission. Verifiez que vous etes connecte.');
     } finally {
       setSubmitting(false);
     }
