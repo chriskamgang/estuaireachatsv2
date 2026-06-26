@@ -37,6 +37,11 @@ export class ProductQueryDto {
   @Min(0)
   maxPrice?: number;
 
+  @ApiPropertyOptional({ description: 'Pays d\'origine (code ISO ex: CM, CN, FR)', example: 'CM' })
+  @IsOptional()
+  @IsString()
+  origin?: string;
+
   @ApiPropertyOptional({
     example: 'price_asc',
     enum: ['price_asc', 'price_desc', 'newest', 'rating', 'best_selling'],

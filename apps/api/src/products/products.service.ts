@@ -163,7 +163,7 @@ export class ProductsService {
   }
 
   async findAll(query: ProductQueryDto, userId?: string) {
-    const { search, categoryId, brandId, shopId, minPrice, maxPrice, sort } = query;
+    const { search, categoryId, brandId, shopId, minPrice, maxPrice, sort, origin } = query;
     const page = query.page ?? 1;
     const perPage = query.perPage ?? 20;
     const skip = (page - 1) * perPage;
@@ -188,6 +188,7 @@ export class ProductsService {
       ...(categoryId && { categoryId }),
       ...(brandId && { brandId }),
       ...(shopId && { shopId }),
+      ...(origin && { origin }),
       ...((minPrice !== undefined || maxPrice !== undefined) && {
         price: {
           ...(minPrice !== undefined && { gte: minPrice }),
