@@ -47,6 +47,7 @@ export class ShopsService {
           where: { status: 'ACTIVE', isPublished: true },
           include: {
             images: { where: { isMain: true }, take: 1 },
+            category: { select: { id: true, name: true, slug: true } },
           },
           orderBy: { createdAt: 'desc' },
           take: 20,
@@ -64,6 +65,7 @@ export class ShopsService {
             where: { status: 'ACTIVE', isPublished: true },
             include: {
               images: { where: { isMain: true }, take: 1 },
+              category: { select: { id: true, name: true, slug: true } },
             },
             orderBy: { createdAt: 'desc' },
             take: 20,

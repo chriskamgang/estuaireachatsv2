@@ -38,6 +38,7 @@ import { SizeGuidesModule } from './size-guides/size-guides.module';
 import { NexahSmsModule } from './nexah-sms/nexah-sms.module';
 import { PosModule } from './pos/pos.module';
 import { AiSourcingModule } from './ai-sourcing/ai-sourcing.module';
+import { SearchHistoryModule } from './search-history/search-history.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { AiSourcingModule } from './ai-sourcing/ai-sourcing.module';
     NexahSmsModule,
     PosModule,
     AiSourcingModule,
+    SearchHistoryModule,
   ],
 })
 export class AppModule {}

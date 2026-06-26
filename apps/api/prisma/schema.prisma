@@ -186,12 +186,14 @@ model UserSearch {
   userId       String
   query        String
   resultsCount Int      @default(0)
+  notified     Boolean  @default(false)
 
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([notified, createdAt])
   @@map("user_searches")
 }
 
