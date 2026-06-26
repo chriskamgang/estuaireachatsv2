@@ -1,9 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-async function getAnthropicKey(): Promise<string> {
+// Recuperer la cle API Gemini depuis les settings ou l'env
+async function getGeminiKey(): Promise<string> {
   try {
     const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
     if (res.ok) {
@@ -11,7 +11,7 @@ async function getAnthropicKey(): Promise<string> {
       if (data.key) return data.key;
     }
   } catch {}
-  return process.env.ANTHROPIC_API_KEY || '';
+  return process.env.GEMINI_API_KEY || '';
 }
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA de sourcing d'EstuaireAchats, une plateforme e-commerce B2B panafricaine (clone d'Alibaba).
@@ -51,30 +51,41 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
-    const apiKey = await getAnthropicKey();
-    if (!apiKey || apiKey === 'sk-ant-your-key-here') {
+    const apiKey = await getGeminiKey();
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'Cle API Anthropic non configuree. Configurez-la dans Admin > Parametres > IA.' },
+        { error: 'Cle API Gemini non configuree. Configurez-la dans Admin > Parametres > IA.' },
         { status: 500 }
       );
     }
 
-    const client = new Anthropic({ apiKey });
+    // Convertir les messages au format Gemini (role "user" ou "model")
+    const geminiContents = messages.map((m: { role: string; content: string }) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: messages.map((m: { role: string; content: string }) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-    });
+    // Appel API Gemini via fetch
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: geminiContents,
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        }),
+      }
+    );
 
-    const text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    if (!geminiRes.ok) {
+      const errData = await geminiRes.json().catch(() => ({}));
+      const errMsg = errData?.error?.message || `Erreur Gemini API (${geminiRes.status})`;
+      return NextResponse.json({ error: errMsg }, { status: 500 });
+    }
+
+    const geminiData = await geminiRes.json();
+    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     return NextResponse.json({ response: text });
   } catch (error: unknown) {

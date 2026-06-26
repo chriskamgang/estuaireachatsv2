@@ -63,7 +63,7 @@ export default function SettingsPage() {
   }, []);
 
   // IA
-  const [anthropicKey, setAnthropicKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
   const [unsplashKey, setUnsplashKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [showUnsplashKey, setShowUnsplashKey] = useState(false);
@@ -73,11 +73,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (activeTab === 'ia') {
-      api.get<{ data: { hasAnthropicKey: boolean; anthropicKey: string; hasUnsplashKey: boolean; unsplashKey: string } }>('/settings/ai')
+      api.get<{ data: { hasGeminiKey: boolean; geminiKey: string; hasUnsplashKey: boolean; unsplashKey: string } }>('/settings/ai')
         .then(res => {
           setAiStatus({
-            hasKey: res.data.hasAnthropicKey,
-            maskedKey: res.data.anthropicKey,
+            hasKey: res.data.hasGeminiKey,
+            maskedKey: res.data.geminiKey,
             hasUnsplashKey: res.data.hasUnsplashKey,
             maskedUnsplashKey: res.data.unsplashKey,
           });
@@ -87,22 +87,22 @@ export default function SettingsPage() {
   }, [activeTab]);
 
   const saveAiConfig = async () => {
-    if (!anthropicKey.trim() && !unsplashKey.trim()) return;
+    if (!geminiKey.trim() && !unsplashKey.trim()) return;
     setAiSaving(true);
     setAiError('');
     try {
       const body: Record<string, string> = {};
-      if (anthropicKey.trim()) body.anthropicKey = anthropicKey;
+      if (geminiKey.trim()) body.geminiKey = geminiKey;
       if (unsplashKey.trim()) body.unsplashKey = unsplashKey;
 
-      const res = await api.patch<{ data: { hasAnthropicKey: boolean; anthropicKey: string; hasUnsplashKey: boolean; unsplashKey: string } }>('/settings/ai', body);
-      setAnthropicKey('');
+      const res = await api.patch<{ data: { hasGeminiKey: boolean; geminiKey: string; hasUnsplashKey: boolean; unsplashKey: string } }>('/settings/ai', body);
+      setGeminiKey('');
       setUnsplashKey('');
       setSaved('ia');
       setTimeout(() => setSaved(null), 3000);
       setAiStatus({
-        hasKey: res.data.hasAnthropicKey,
-        maskedKey: res.data.anthropicKey,
+        hasKey: res.data.hasGeminiKey,
+        maskedKey: res.data.geminiKey,
         hasUnsplashKey: res.data.hasUnsplashKey,
         maskedUnsplashKey: res.data.unsplashKey,
       });
@@ -293,7 +293,7 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="text-sm font-bold text-dark">Mode IA — EstuaireAchats</h3>
                   <p className="text-xs text-gray-2 mt-1">
-                    L&apos;IA utilise Claude (Anthropic) pour le chat sourcing, l&apos;analyse de produits par image,
+                    L&apos;IA utilise Google Gemini pour le chat sourcing, l&apos;analyse de produits par image,
                     et le remplissage automatique des fiches produits. Unsplash est utilise pour suggerer des images similaires.
                   </p>
                 </div>
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                         {aiStatus.hasKey ? <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0" />}
                         <div className="flex-1">
                           <p className={`text-sm font-medium ${aiStatus.hasKey ? 'text-green-800' : 'text-yellow-800'}`}>
-                            Claude API {aiStatus.hasKey ? 'active' : 'non configuree'}
+                            Gemini API {aiStatus.hasKey ? 'active' : 'non configuree'}
                           </p>
                           {aiStatus.hasKey && <p className="text-xs text-green-600 mt-0.5">Cle : {aiStatus.maskedKey}</p>}
                         </div>
@@ -347,24 +347,24 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Anthropic API Key */}
+              {/* Gemini API Key */}
               <div>
                 <label className="block text-sm font-medium text-gray-2 mb-1">
-                  Cle API Anthropic (Claude)
+                  Cle API Google Gemini
                 </label>
                 <p className="text-xs text-gray-3 mb-2">
                   Obtenez votre cle sur{' '}
-                  <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    console.anthropic.com
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    aistudio.google.com/apikey
                   </a>
                   {' '} — Utilisee pour le chat IA et l&apos;analyse de produits par image.
                 </p>
                 <div className="relative">
                   <input
                     type={showKey ? 'text' : 'password'}
-                    value={anthropicKey}
-                    onChange={(e) => setAnthropicKey(e.target.value)}
-                    placeholder="sk-ant-api03-..."
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                    placeholder="AIzaSy..."
                     className="w-full border border-gray-5 rounded-lg px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none pr-10"
                   />
                   <button
@@ -411,8 +411,8 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-2 mb-1">Modele utilise</label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <span className="text-sm font-medium text-dark">Claude Sonnet 4</span>
-                  <span className="text-xs text-gray-3 bg-gray-200 px-2 py-0.5 rounded-full">claude-sonnet-4-20250514</span>
+                  <span className="text-sm font-medium text-dark">Gemini 2.0 Flash</span>
+                  <span className="text-xs text-gray-3 bg-gray-200 px-2 py-0.5 rounded-full">gemini-2.0-flash</span>
                 </div>
                 <p className="text-xs text-gray-3 mt-1">Utilise pour : chat sourcing (FR/EN), analyse d&apos;images produits, remplissage automatique des fiches.</p>
               </div>
@@ -422,9 +422,9 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-gray-2 mb-2">Fonctionnalites IA</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: 'Chat sourcing acheteurs', needs: 'Claude', active: aiStatus?.hasKey },
-                    { label: 'Analyse image produit', needs: 'Claude', active: aiStatus?.hasKey },
-                    { label: 'Auto-remplissage fiches', needs: 'Claude', active: aiStatus?.hasKey },
+                    { label: 'Chat sourcing acheteurs', needs: 'Gemini', active: aiStatus?.hasKey },
+                    { label: 'Analyse image produit', needs: 'Gemini', active: aiStatus?.hasKey },
+                    { label: 'Auto-remplissage fiches', needs: 'Gemini', active: aiStatus?.hasKey },
                     { label: 'Images similaires', needs: 'Unsplash', active: aiStatus?.hasUnsplashKey },
                   ].map((f) => (
                     <div key={f.label} className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs ${
@@ -448,9 +448,9 @@ export default function SettingsPage() {
               {/* Save button */}
               <button
                 onClick={saveAiConfig}
-                disabled={(!anthropicKey.trim() && !unsplashKey.trim()) || aiSaving}
+                disabled={(!geminiKey.trim() && !unsplashKey.trim()) || aiSaving}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
-                  (anthropicKey.trim() || unsplashKey.trim()) && !aiSaving
+                  (geminiKey.trim() || unsplashKey.trim()) && !aiSaving
                     ? 'bg-primary text-white hover:bg-primary/90'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}

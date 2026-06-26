@@ -1,9 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-async function getAnthropicKey(): Promise<string> {
+// Recuperer la cle API Gemini depuis les settings ou l'env
+async function getGeminiKey(): Promise<string> {
   try {
     const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
     if (res.ok) {
@@ -11,7 +11,7 @@ async function getAnthropicKey(): Promise<string> {
       if (data.key) return data.key;
     }
   } catch {}
-  return process.env.ANTHROPIC_API_KEY || '';
+  return process.env.GEMINI_API_KEY || '';
 }
 
 async function getUnsplashKey(): Promise<string> {
@@ -41,42 +41,8 @@ async function searchUnsplash(query: string, count = 5): Promise<string[]> {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const apiKey = await getAnthropicKey();
-    if (!apiKey || apiKey === 'sk-ant-your-key-here') {
-      return NextResponse.json(
-        { error: 'Cle API Anthropic non configuree. Configurez-la dans Admin > Parametres > IA.' },
-        { status: 500 }
-      );
-    }
-
-    const client = new Anthropic({ apiKey });
-
-    const { image, mimeType } = await req.json();
-
-    if (!image) {
-      return NextResponse.json({ error: 'Image requise' }, { status: 400 });
-    }
-
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mimeType || 'image/jpeg',
-                data: image,
-              },
-            },
-            {
-              type: 'text',
-              text: `Analyse cette image de produit pour une plateforme e-commerce B2B panafricaine (marche africain, devise FCFA/XAF).
+// Prompt systeme pour l'analyse de produit
+const PRODUCT_ANALYZE_PROMPT = `Analyse cette image de produit pour une plateforme e-commerce B2B panafricaine (marche africain, devise FCFA/XAF).
 
 Reponds UNIQUEMENT en JSON valide avec cette structure exacte :
 {
@@ -119,17 +85,49 @@ IMPORTANT:
 - Les prix sont en FCFA (XAF), adaptes au marche africain
 - Le MOQ doit etre realiste pour du B2B
 - Les paliers de prix doivent etre degressifs
-- Pas de markdown, pas de commentaires, JUSTE le JSON`
-            },
-          ],
-        },
-      ],
-    });
+- Pas de markdown, pas de commentaires, JUSTE le JSON`;
 
-    const text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+export async function POST(req: NextRequest) {
+  try {
+    const apiKey = await getGeminiKey();
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Cle API Gemini non configuree. Configurez-la dans Admin > Parametres > IA.' },
+        { status: 500 }
+      );
+    }
+
+    const { image, mimeType } = await req.json();
+
+    if (!image) {
+      return NextResponse.json({ error: 'Image requise' }, { status: 400 });
+    }
+
+    // Appel API Gemini avec image en base64
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: PRODUCT_ANALYZE_PROMPT },
+              { inlineData: { mimeType: mimeType || 'image/jpeg', data: image } },
+            ],
+          }],
+        }),
+      }
+    );
+
+    if (!geminiRes.ok) {
+      const errData = await geminiRes.json().catch(() => ({}));
+      const errMsg = errData?.error?.message || `Erreur Gemini API (${geminiRes.status})`;
+      return NextResponse.json({ error: errMsg }, { status: 500 });
+    }
+
+    const geminiData = await geminiRes.json();
+    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Parse JSON from response
     let productData;

@@ -10,7 +10,6 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.104.2",
     "@ea/shared": "workspace:*",
     "clsx": "^2.1.0",
     "leaflet": "^1.9.4",

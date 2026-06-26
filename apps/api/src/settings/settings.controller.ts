@@ -159,7 +159,7 @@ export class SettingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Voir la configuration IA (Anthropic + Unsplash)' })
+  @ApiOperation({ summary: 'Voir la configuration IA (Gemini + Unsplash)' })
   async getAiSettings() {
     return { result: true, data: await this.settingsService.getAiSettings() };
   }
@@ -169,7 +169,7 @@ export class SettingsController {
   @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Modifier la configuration IA' })
-  async updateAiSettings(@Body() dto: { anthropicKey?: string; unsplashKey?: string }) {
+  async updateAiSettings(@Body() dto: { geminiKey?: string; unsplashKey?: string }) {
     const data = await this.settingsService.updateAiSettings(dto);
     return { result: true, message: 'Configuration IA mise a jour', data };
   }
@@ -177,9 +177,9 @@ export class SettingsController {
   // ==================== AI INTERNAL (for web app AI routes) ====================
 
   @Get('ai/key')
-  @ApiOperation({ summary: 'Recuperer la cle Anthropic (usage interne web)' })
-  async getAnthropicKey() {
-    const key = await this.settingsService.getValue('anthropic_api_key', 'ANTHROPIC_API_KEY');
+  @ApiOperation({ summary: 'Recuperer la cle Gemini (usage interne web)' })
+  async getGeminiKey() {
+    const key = await this.settingsService.getValue('gemini_api_key', 'GEMINI_API_KEY');
     return { key: key || '' };
   }
 
