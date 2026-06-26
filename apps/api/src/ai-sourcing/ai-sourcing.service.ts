@@ -49,17 +49,36 @@ export class AiSourcingService {
             systemInstruction: {
               parts: [
                 {
-                  text: `Tu es un assistant de sourcing pour EstuaireAchats, une plateforme e-commerce au Cameroun.
-L'utilisateur cherche des produits ou fournisseurs. Analyse sa demande et reponds en JSON:
+                  text: `Tu es un assistant de sourcing intelligent pour EstuaireAchats, une plateforme e-commerce B2B au Cameroun (comme Alibaba).
+
+Analyse la demande de l'utilisateur et determine son INTENTION :
+1. "search" — L'utilisateur cherche un produit ou fournisseur specifique (ex: "smartphone Samsung", "ciment Portland")
+2. "help" — L'utilisateur demande de l'aide, des conseils, veut concevoir un produit, ou pose une question generale
+
+Reponds UNIQUEMENT en JSON (sans markdown ni backticks) :
+
+Si intention = "search":
 {
+  "intent": "search",
   "keywords": ["mot1", "mot2"],
   "category": "categorie suggeree ou null",
   "budgetMin": null,
   "budgetMax": null,
-  "message": "Un court message utile pour l'utilisateur (2-3 phrases max, en francais)",
-  "suggestions": ["suggestion de recherche 1", "suggestion 2", "suggestion 3"]
+  "message": "Court message utile (2-3 phrases, en francais)",
+  "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"]
 }
-Reponds UNIQUEMENT avec le JSON, sans markdown ni backticks.`,
+
+Si intention = "help":
+{
+  "intent": "help",
+  "keywords": [],
+  "message": "Reponse detaillee et utile a l'utilisateur (5-10 phrases en francais). Donne des conseils concrets, pose des questions pour mieux comprendre son besoin. Sois un vrai assistant expert en sourcing et commerce au Cameroun/Afrique.",
+  "suggestions": ["recherche suggeree 1", "recherche suggeree 2", "recherche suggeree 3"],
+  "followUpQuestions": ["Question pour mieux cerner le besoin 1", "Question 2"]
+}
+
+Exemples de "help": "aide moi a concevoir un produit", "comment trouver un bon fournisseur", "je veux lancer un business", "quels sont les produits tendance".
+Exemples de "search": "ciment 50kg", "telephone Samsung", "fournisseur de vetements".`,
                 },
               ],
             },
@@ -82,12 +101,14 @@ Reponds UNIQUEMENT avec le JSON, sans markdown ni backticks.`,
 
       // Parser le JSON retourne par Gemini
       let parsed: {
+        intent?: string;
         keywords?: string[];
         category?: string | null;
         budgetMin?: number | null;
         budgetMax?: number | null;
         message?: string;
         suggestions?: string[];
+        followUpQuestions?: string[];
       };
 
       try {
@@ -97,7 +118,25 @@ Reponds UNIQUEMENT avec le JSON, sans markdown ni backticks.`,
         return this.search(dto);
       }
 
-      // Construire les parametres de recherche a partir de l'analyse Gemini
+      // Si l'intent est "help", retourner la reponse conversationnelle sans recherche
+      if (parsed.intent === 'help') {
+        return {
+          result: true,
+          data: {
+            aiMessage: parsed.message || null,
+            suggestions: parsed.suggestions || [],
+            followUpQuestions: parsed.followUpQuestions || [],
+            products: [],
+          },
+          meta: {
+            aiPowered: true,
+            intent: 'help',
+            extractedKeywords: [],
+          },
+        };
+      }
+
+      // Intent "search" : recherche produits avec les mots-cles extraits
       const searchQuery = (parsed.keywords ?? []).join(' ') || query;
       const searchDto = {
         query: searchQuery,
@@ -107,7 +146,6 @@ Reponds UNIQUEMENT avec le JSON, sans markdown ni backticks.`,
         budgetMax: dto.budgetMax ?? parsed.budgetMax ?? undefined,
       };
 
-      // Recherche produits avec les mots-cles extraits par Gemini
       const searchResult = await this.search(searchDto);
 
       return {
@@ -115,11 +153,13 @@ Reponds UNIQUEMENT avec le JSON, sans markdown ni backticks.`,
         data: {
           aiMessage: parsed.message || null,
           suggestions: parsed.suggestions || [],
+          followUpQuestions: parsed.followUpQuestions || [],
           products: searchResult.data,
         },
         meta: {
           ...searchResult.meta,
           aiPowered: true,
+          intent: 'search',
           extractedKeywords: parsed.keywords || [],
         },
       };
