@@ -250,7 +250,7 @@ export class CouponsService {
     const coupons = await this.prisma.coupon.findMany({
       where: {
         code: { startsWith: 'FIDEL-' },
-        details: { path: ['loyaltyUserId'], equals: userId },
+        details: { path: ['loyaltyUserId'], equals: userId } as any,
         isActive: true,
         endDate: { gte: now },
       },
