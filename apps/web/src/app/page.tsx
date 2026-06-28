@@ -968,14 +968,14 @@ export default function HomePage() {
       {/* ─── Hero: Tabs + Search (white card with rounded bottom) ─── */}
       <div className="relative bg-gray-6">
         <div className="bg-white hero-card-bottom">
-          <div className="max-w-[1440px] mx-auto px-6">
+          <div className="max-w-[1440px] mx-auto px-3 sm:px-6">
             {/* Tabs */}
-            <div className="flex items-center justify-center pt-3 pb-1">
+            <div className="flex items-center justify-center pt-3 pb-1 overflow-x-auto scrollbar-hide">
               {TABS.map((tab, i) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative px-7 py-2.5 text-[20px] font-semibold transition-colors ${
+                  className={`relative shrink-0 px-4 py-2 text-[14px] font-semibold transition-colors sm:px-7 sm:py-2.5 sm:text-[20px] ${
                     activeTab === tab.id
                       ? 'text-orange'
                       : 'text-dark hover:text-orange'
@@ -992,7 +992,7 @@ export default function HomePage() {
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-orange rounded-full" />
                   )}
                   {i < TABS.length - 1 && (
-                    <span className="absolute right-0 top-1/2 -translate-y-1/2 w-px h-5 bg-gray-4" />
+                    <span className="absolute right-0 top-1/2 -translate-y-1/2 w-px h-5 bg-gray-4 hidden sm:block" />
                   )}
                 </button>
               ))}
@@ -1000,7 +1000,7 @@ export default function HomePage() {
 
             {/* Search box (hidden in AI mode) */}
             {activeTab !== 'ai' && (
-              <div className="py-6 pb-10 flex justify-center">
+              <div className="py-4 pb-6 flex justify-center sm:py-6 sm:pb-10">
                 <form onSubmit={handleSearch} className="w-full max-w-[720px]">
                   <div className="hero-search-box">
                     <input
@@ -1021,7 +1021,7 @@ export default function HomePage() {
                       </button>
                       <button
                         type="submit"
-                        className="flex items-center gap-2 border-2 border-orange text-orange hover:bg-orange hover:text-white px-7 py-2 rounded-full text-[14px] font-semibold transition-colors"
+                        className="flex items-center gap-1.5 border-2 border-orange text-orange hover:bg-orange hover:text-white px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors sm:px-7 sm:py-2 sm:gap-2 sm:text-[14px]"
                       >
                         <Search className="w-4 h-4" />
                         Rechercher
@@ -1811,34 +1811,25 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Welcome bar (hidden for minimal layout) */}
+          {/* Welcome bar (hidden for minimal layout, hidden on mobile) */}
           {homepageLayout !== 'minimal' && (
-            <div className="bg-gray-6 border-b border-gray-5">
+            <div className="hidden bg-gray-6 border-b border-gray-5 md:block">
               <div className="max-w-[1440px] mx-auto px-6 py-3 flex items-center justify-between">
                 <h2 className="text-[15px] font-bold text-dark">
                   Bienvenue sur EstuaireAchats
                 </h2>
                 <div className="flex items-center gap-0 text-[13px]">
-                  <Link
-                    href="/rfq"
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors"
-                  >
+                  <Link href="/rfq" className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors">
                     <Target className="w-4 h-4" />
                     Demander un devis
                   </Link>
                   <span className="text-gray-4">|</span>
-                  <Link
-                    href="/top-ranking"
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors"
-                  >
+                  <Link href="/top-ranking" className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors">
                     <TrendingUp className="w-4 h-4" />
                     Top du classement
                   </Link>
                   <span className="text-gray-4">|</span>
-                  <Link
-                    href="/search?filter=custom"
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors"
-                  >
+                  <Link href="/search?filter=custom" className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors">
                     <Zap className="w-4 h-4" />
                     Customization rapide
                   </Link>
@@ -1847,12 +1838,28 @@ export default function HomePage() {
             </div>
           )}
 
+          {/* Mobile: categories horizontal scroll (like Alibaba) */}
+          {homepageLayout !== 'minimal' && apiCategories.length > 0 && (
+            <div className="bg-white px-3 py-3 md:hidden">
+              <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+                {apiCategories.slice(0, 10).map((cat) => (
+                  <Link key={cat.id} href={`/categories/${cat.slug}`} className="flex flex-col items-center gap-1.5 shrink-0 w-[60px]">
+                    <div className="w-[48px] h-[48px] rounded-xl bg-gray-6 flex items-center justify-center">
+                      <CategoryIcon name={cat.icon} size={22} className="text-gray-2" />
+                    </div>
+                    <span className="text-[10px] text-gray-1 text-center leading-tight line-clamp-2">{cat.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Main 3-column section (hidden for minimal layout) */}
           {homepageLayout !== 'minimal' && (
-            <div className="max-w-[1440px] mx-auto px-6 py-4">
-              <div className="flex gap-4">
+            <div className="max-w-[1440px] mx-auto px-3 py-4 sm:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row">
                 {/* Left: Categories sidebar */}
-                <div className="w-[200px] shrink-0">
+                <div className="hidden lg:block lg:w-[200px] lg:shrink-0">
                   <div className="bg-white rounded-xl overflow-hidden" style={{ maxHeight: '420px', overflowY: 'auto' }}>
                     <ul>
                       {apiCategories.map((cat) => (
@@ -1874,9 +1881,9 @@ export default function HomePage() {
                 </div>
 
                 {/* Center: 3 explore cards */}
-                <div className="flex-1 flex gap-4 min-w-0">
+                <div className="flex-1 grid grid-cols-1 gap-4 min-w-0 sm:grid-cols-2 xl:grid-cols-3">
                   {EXPLORE_CARDS.map((card, idx) => (
-                    <div key={idx} className="flex-1 bg-white rounded-xl p-4 min-w-0">
+                    <div key={idx} className="bg-white rounded-xl p-4 min-w-0">
                       <h3 className="text-[15px] font-bold text-dark leading-tight">
                         {card.title}
                       </h3>
@@ -1906,7 +1913,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Right: Promo carousel */}
-                <div className="w-[280px] shrink-0">
+                <div className="w-full lg:w-[280px] lg:shrink-0">
                   <div className="relative rounded-xl overflow-hidden h-full">
                     <div
                       className={`bg-gradient-to-br ${PROMO_SLIDES[promoIndex].bg} p-5 text-white h-full flex flex-col justify-between transition-all duration-500`}
@@ -2031,11 +2038,11 @@ export default function HomePage() {
 
           {/* Banners (hidden for minimal layout) */}
           {homepageLayout !== 'minimal' && (
-            <div className="max-w-[1440px] mx-auto px-6 pb-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="max-w-[1440px] mx-auto px-3 pb-4 sm:px-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <Link
                   href="/search?filter=local"
-                  className="relative rounded-xl overflow-hidden bg-[#1B3A5C] p-5 flex items-center gap-4 text-white hover:shadow-lg transition-shadow group"
+                  className="relative rounded-xl overflow-hidden bg-[#1B3A5C] p-4 flex items-center gap-3 text-white hover:shadow-lg transition-shadow group sm:p-5 sm:gap-4"
                 >
                   <span className="text-3xl">🇨🇲</span>
                   <div>
@@ -2066,7 +2073,7 @@ export default function HomePage() {
           )}
 
           {/* Recommended products */}
-          <div id="recommended-products" className="max-w-[1440px] mx-auto px-6 pb-10">
+          <div id="recommended-products" className="max-w-[1440px] mx-auto px-3 pb-8 sm:px-6 sm:pb-10">
             {homepageLayout !== 'minimal' && (
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-[15px] text-gray-3">
@@ -2122,8 +2129,8 @@ export default function HomePage() {
         </>
       )}
 
-      {/* ─── Floating sidebar (right edge) ─── */}
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col bg-white rounded-l-lg shadow-lg overflow-hidden">
+      {/* ─── Floating sidebar (right edge, hidden mobile) ─── */}
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col bg-white rounded-l-lg shadow-lg overflow-hidden">
         <button className="flex flex-col items-center gap-1 px-3 py-3 hover:bg-gray-6 transition-colors border-b border-gray-5">
           <MessageSquare className="w-5 h-5 text-gray-2" />
           <span className="text-[10px] text-gray-3 leading-tight">Messagerie</span>

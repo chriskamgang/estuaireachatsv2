@@ -138,11 +138,11 @@ export default function MessagesPage() {
 
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-      <h1 className="border-b border-gray-5 px-6 py-4 text-xl font-bold text-dark">Messagerie</h1>
+      <h1 className="border-b border-gray-5 px-4 sm:px-6 py-3 sm:py-4 text-lg sm:text-xl font-bold text-dark">Messagerie</h1>
 
-      <div className="flex" style={{ height: '520px' }}>
+      <div className="flex flex-col md:flex-row" style={{ minHeight: '400px' }}>
         {/* Conversation list */}
-        <div className="w-[300px] shrink-0 overflow-y-auto border-r border-gray-5">
+        <div className="w-full md:w-[300px] shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-gray-5 max-h-[200px] md:max-h-[520px]">
           {conversations.map((conv) => (
             <button
               key={conv.id}
@@ -179,9 +179,9 @@ export default function MessagesPage() {
 
         {/* Message thread */}
         {activeConv ? (
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col min-h-[300px] md:min-h-0">
             {/* Thread header */}
-            <div className="flex items-center gap-3 border-b border-gray-5 px-5 py-3">
+            <div className="flex items-center gap-3 border-b border-gray-5 px-3 sm:px-5 py-3">
               <img
                 src={getAvatar(activeConv)}
                 alt=""
@@ -191,7 +191,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+            <div className="flex-1 space-y-3 overflow-y-auto px-3 sm:px-5 py-4">
               {loadingMsgs ? (
                 <div className="flex h-full items-center justify-center">
                   <span className="h-6 w-6 animate-spin rounded-full border-2 border-orange border-t-transparent" />
@@ -233,7 +233,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSend} className="flex items-center gap-3 border-t border-gray-5 px-5 py-3">
+            <form onSubmit={handleSend} className="flex items-center gap-2 sm:gap-3 border-t border-gray-5 px-3 sm:px-5 py-3">
               <input
                 type="text"
                 value={newMessage}
