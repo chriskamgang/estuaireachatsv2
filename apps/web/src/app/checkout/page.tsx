@@ -268,8 +268,8 @@ export default function CheckoutPage() {
 
         {/* Step 1 - Adresse */}
         {step === 1 && (
-          <div className="rounded-lg bg-white p-6 shadow-sm">
-            <h2 className="mb-6 text-xl font-bold text-[#191919]">Adresse de livraison</h2>
+          <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+            <h2 className="mb-6 text-lg sm:text-xl font-bold text-[#191919]">Adresse de livraison</h2>
 
             {loadingAddresses ? (
               <div className="flex justify-center py-8">
@@ -402,8 +402,8 @@ export default function CheckoutPage() {
 
         {/* Step 2 - Livraison */}
         {step === 2 && (
-          <div className="rounded-lg bg-white p-6 shadow-sm">
-            <h2 className="mb-6 text-xl font-bold text-[#191919]">Methode de livraison</h2>
+          <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+            <h2 className="mb-6 text-lg sm:text-xl font-bold text-[#191919]">Methode de livraison</h2>
 
             {/* Partenaire de livraison */}
             <div className="mb-6 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -513,16 +513,16 @@ export default function CheckoutPage() {
               })}
             </div>
 
-            <div className="mt-8 flex justify-between">
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button
                 onClick={() => setStep(1)}
-                className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-6 sm:px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
                 Retour
               </button>
               <button
                 onClick={() => setStep(3)}
-                className="rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23]"
+                className="rounded-lg bg-[#E82328] px-6 sm:px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23]"
               >
                 Continuer
               </button>
@@ -535,8 +535,8 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Payment methods */}
             <div className="lg:col-span-2">
-              <div className="rounded-lg bg-white p-6 shadow-sm">
-                <h2 className="mb-6 text-xl font-bold text-[#191919]">Methode de paiement</h2>
+              <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+                <h2 className="mb-6 text-lg sm:text-xl font-bold text-[#191919]">Methode de paiement</h2>
 
                 <div className="space-y-3">
                   {/* MTN MoMo */}
@@ -581,7 +581,7 @@ export default function CheckoutPage() {
 
                   {/* Phone number input for MoMo/OM */}
                   {(paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY') && (
-                    <div className="ml-14 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="ml-0 sm:ml-14 rounded-lg border border-gray-200 bg-gray-50 p-4">
                       <label className="mb-2 block text-sm font-medium text-[#191919]">
                         Numero de telephone {paymentMethod === 'MTN_MOMO' ? 'MTN' : 'Orange'}
                       </label>
@@ -668,17 +668,17 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="mt-8 flex justify-between">
+                <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
                   <button
                     onClick={() => setStep(2)}
-                    className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                    className="rounded-lg border border-gray-300 px-6 sm:px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
                   >
                     Retour
                   </button>
                   <button
                     onClick={() => { setOrderError(''); handleConfirmOrder(); }}
                     disabled={confirmingOrder || ((paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY') && phoneNumber.length < 12)}
-                    className="flex items-center gap-2 rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-60"
+                    className="flex items-center justify-center gap-2 rounded-lg bg-[#E82328] px-6 sm:px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-60"
                   >
                     {confirmingOrder && (
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -736,9 +736,9 @@ export default function CheckoutPage() {
 
         {/* Step 4 - Confirmation (COD uniquement, les autres redirigent vers gateway) */}
         {step === 4 && (
-          <div className="rounded-lg bg-white p-12 text-center shadow-sm">
-            <CheckCircle className="mx-auto mb-6 h-20 w-20 text-green-500" />
-            <h2 className="mb-2 text-2xl font-bold text-[#191919]">Commande enregistree !</h2>
+          <div className="rounded-lg bg-white p-6 sm:p-12 text-center shadow-sm">
+            <CheckCircle className="mx-auto mb-6 h-16 w-16 sm:h-20 sm:w-20 text-green-500" />
+            <h2 className="mb-2 text-xl sm:text-2xl font-bold text-[#191919]">Commande enregistree !</h2>
             <p className="mb-2 text-gray-500">
               {paymentMethod === 'COD'
                 ? 'Votre commande a ete enregistree. Vous payerez a la livraison.'
@@ -749,16 +749,16 @@ export default function CheckoutPage() {
             <p className="mb-8 text-lg font-semibold text-[#191919]">
               Numero de commande : <span className="text-[#E82328]">{orderNumber}</span>
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
               <Link
                 href="/account/orders"
-                className="rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23]"
+                className="rounded-lg bg-[#E82328] px-6 sm:px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23]"
               >
                 Voir mes commandes
               </Link>
               <Link
                 href="/"
-                className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-6 sm:px-8 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
               >
                 Continuer les achats
               </Link>

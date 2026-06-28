@@ -63,7 +63,7 @@ export default function CouponsPage() {
       )}
 
       {/* Section Coupons de fidelite */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00A06A]/10">
             <Award size={22} className="text-[#00A06A]" />
@@ -107,9 +107,9 @@ export default function CouponsPage() {
                     </span>
                   </div>
 
-                  <div className="flex">
+                  <div className="flex flex-col sm:flex-row">
                     {/* Left: discount value */}
-                    <div className="flex w-[110px] shrink-0 flex-col items-center justify-center bg-[#00A06A] p-4 text-white">
+                    <div className="flex w-full sm:w-[110px] shrink-0 flex-col items-center justify-center bg-[#00A06A] p-3 sm:p-4 text-white">
                       <span className="text-2xl font-bold">
                         {coupon.discountType === 'percentage'
                           ? `${coupon.discountValue}%`
@@ -163,8 +163,8 @@ export default function CouponsPage() {
       </div>
 
       {/* Section Tous mes coupons */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-dark">Tous mes coupons</h1>
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
+        <h1 className="mb-6 text-lg sm:text-xl font-bold text-dark">Tous mes coupons</h1>
 
         {/* Tabs */}
         <div className="mb-6 flex gap-1 border-b border-gray-5">
@@ -221,11 +221,11 @@ export default function CouponsPage() {
                     </div>
                   )}
 
-                  <div className="flex">
+                  <div className="flex flex-col sm:flex-row">
                     {/* Left: discount value */}
                     <div
                       className={cn(
-                        'flex w-[120px] shrink-0 flex-col items-center justify-center p-4',
+                        'flex w-full sm:w-[120px] shrink-0 flex-col items-center justify-center p-3 sm:p-4',
                         isAvailable
                           ? isLoyalty
                             ? 'bg-[#00A06A] text-white'

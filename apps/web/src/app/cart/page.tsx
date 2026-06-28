@@ -80,14 +80,14 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-[#F5F5F5]">
         <div className="mx-auto max-w-5xl px-4 py-16">
-          <div className="rounded-lg bg-white p-12 text-center shadow-sm">
-            <ShoppingCart className="mx-auto mb-6 h-24 w-24 text-gray-300" />
-            <h1 className="mb-2 text-2xl font-bold text-[#191919]">Votre panier est vide.</h1>
+          <div className="rounded-lg bg-white p-6 sm:p-12 text-center shadow-sm">
+            <ShoppingCart className="mx-auto mb-6 h-16 w-16 sm:h-24 sm:w-24 text-gray-300" />
+            <h1 className="mb-2 text-xl sm:text-2xl font-bold text-[#191919]">Votre panier est vide.</h1>
             <p className="mb-8 text-gray-500">
               Explorez nos produits et ajoutez vos articles preferes au panier.
             </p>
 
-            <div className="mb-10 flex justify-center gap-8">
+            <div className="mb-10 flex flex-col sm:flex-row justify-center gap-4 sm:gap-8">
               <div className="flex flex-col items-center gap-2">
                 <ShieldCheck className="h-8 w-8 text-[#E82328]" />
                 <span className="text-sm text-[#191919] font-medium">Paiements securises</span>
@@ -198,12 +198,12 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="w-32 text-center text-sm font-medium text-[#191919]">
+                  <div className="w-full md:w-32 text-left md:text-center text-sm font-medium text-[#191919]">
                     {formatPrice(item.price)}
                   </div>
 
                   {/* Quantity selector */}
-                  <div className="flex w-32 items-center justify-center">
+                  <div className="flex w-full md:w-32 items-center justify-start md:justify-center">
                     <button
                       onClick={() =>
                         updateQuantity(item.id, Math.max(item.minQty, item.quantity - 1))
@@ -227,11 +227,11 @@ export default function CartPage() {
                     </button>
                   </div>
 
-                  <div className="w-32 text-center text-sm font-bold text-[#E82328]">
+                  <div className="w-full md:w-32 text-left md:text-center text-sm font-bold text-[#E82328]">
                     {formatPrice(item.price * item.quantity)}
                   </div>
 
-                  <div className="flex w-16 justify-center">
+                  <div className="flex w-full md:w-16 justify-start md:justify-center">
                     <button
                       onClick={() => removeItem(item.id)}
                       className="rounded p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-[#E82328]"
@@ -249,7 +249,7 @@ export default function CartPage() {
       {/* Bottom sticky bar */}
       {items.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <div className="mx-auto flex max-w-5xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-3">
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
@@ -262,14 +262,14 @@ export default function CartPage() {
                 ({selectedItems.length} article{selectedItems.length !== 1 ? 's' : ''})
               </span>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6">
               <div className="text-right">
-                <span className="text-sm text-gray-500">Sous-total : </span>
-                <span className="text-lg font-bold text-[#E82328]">{formatPrice(subtotal)}</span>
+                <span className="hidden sm:inline text-sm text-gray-500">Sous-total : </span>
+                <span className="text-base sm:text-lg font-bold text-[#E82328]">{formatPrice(subtotal)}</span>
               </div>
               <Link
                 href={selectedItems.length > 0 ? '/checkout' : '#'}
-                className={`rounded-full px-8 py-2.5 text-sm font-semibold text-white transition ${
+                className={`rounded-full px-5 sm:px-8 py-2.5 text-xs sm:text-sm font-semibold text-white transition ${
                   selectedItems.length > 0
                     ? 'bg-[#E82328] hover:bg-[#D11F23]'
                     : 'cursor-not-allowed bg-gray-300'

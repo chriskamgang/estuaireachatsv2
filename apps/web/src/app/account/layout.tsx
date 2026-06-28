@@ -52,12 +52,12 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="min-h-screen bg-gray-6">
-      <div className="mx-auto flex max-w-[1440px] gap-6 px-4 py-6">
+      <div className="mx-auto max-w-[1440px] px-3 sm:px-4 py-4 sm:py-6 lg:flex lg:gap-6">
         {/* Sidebar */}
-        <aside className="w-[260px] shrink-0">
+        <aside className="mb-4 lg:mb-0 lg:w-[260px] lg:shrink-0">
           <div className="overflow-hidden rounded-lg bg-white shadow-sm">
             {/* User mini card */}
-            <div className="border-b border-gray-5 px-5 py-4">
+            <div className="hidden lg:block border-b border-gray-5 px-5 py-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange text-sm font-bold text-white">
                   {user?.avatar ? (
@@ -76,7 +76,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
             </div>
 
             {/* Nav */}
-            <nav className="py-2">
+            <nav className="flex overflow-x-auto py-2 lg:flex-col lg:overflow-x-visible">
               {menuItems.map((item) => {
                 const isActive = item.exact
                   ? pathname === item.href
@@ -87,9 +87,9 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 px-5 py-2.5 text-sm transition-colors',
+                      'flex shrink-0 items-center gap-2 lg:gap-3 px-3 lg:px-5 py-2.5 text-xs lg:text-sm transition-colors whitespace-nowrap',
                       isActive
-                        ? 'border-r-3 border-orange bg-orange/5 font-semibold text-orange'
+                        ? 'lg:border-r-3 border-b-2 lg:border-b-0 border-orange bg-orange/5 font-semibold text-orange'
                         : 'text-gray-2 hover:bg-gray-6 hover:text-dark'
                     )}
                   >

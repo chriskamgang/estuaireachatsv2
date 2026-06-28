@@ -93,8 +93,8 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-dark">Mes commandes</h1>
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
+        <h1 className="mb-6 text-lg sm:text-xl font-bold text-dark">Mes commandes</h1>
 
         {/* Tabs */}
         <div className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-5">
@@ -128,10 +128,10 @@ export default function OrdersPage() {
             {filtered.map((order) => {
               const cfg = statusConfig[order.status];
               return (
-                <div key={order.id} className="rounded-lg border border-gray-5 p-5 transition-shadow hover:shadow-md">
+                <div key={order.id} className="rounded-lg border border-gray-5 p-3 sm:p-5 transition-shadow hover:shadow-md">
                   {/* Header */}
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                       <span className="text-sm font-semibold text-dark">{order.code}</span>
                       <span className="text-xs text-gray-3">
                         {new Date(order.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -148,7 +148,7 @@ export default function OrdersPage() {
                   </p>
 
                   {/* Items preview */}
-                  <div className="mb-4 flex items-center gap-3">
+                  <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
                     {order.items.map((item) => (
                       <div key={item.id} className="group relative">
                         {item.thumbnailUrl ? (

@@ -70,14 +70,14 @@ export default function WalletPage() {
   return (
     <div className="space-y-6">
       {/* Balance card */}
-      <div className="overflow-hidden rounded-xl bg-gradient-to-br from-dark to-gray-1 p-6 text-white shadow-lg">
-        <div className="flex items-start justify-between">
+      <div className="overflow-hidden rounded-xl bg-gradient-to-br from-dark to-gray-1 p-4 sm:p-6 text-white shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-sm text-white/70">
               <Wallet size={18} />
               Mon portefeuille
             </div>
-            <p className="mt-3 text-3xl font-bold">{formatPrice(balance)}</p>
+            <p className="mt-3 text-2xl sm:text-3xl font-bold">{formatPrice(balance)}</p>
             <p className="mt-1 text-sm text-white/60">Solde disponible</p>
           </div>
           <button
@@ -92,8 +92,8 @@ export default function WalletPage() {
 
       {/* Recharge form */}
       {showRecharge && (
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-dark">Recharger mon portefeuille</h2>
+        <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+          <h2 className="mb-4 text-base sm:text-lg font-semibold text-dark">Recharger mon portefeuille</h2>
           <div className="max-w-md space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-1">Montant (FCFA)</label>
@@ -129,8 +129,8 @@ export default function WalletPage() {
       )}
 
       {/* Transaction history */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-dark">Historique des transactions</h2>
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
+        <h2 className="mb-4 text-base sm:text-lg font-semibold text-dark">Historique des transactions</h2>
 
         {transactions.length === 0 ? (
           <p className="text-center text-sm text-gray-3 py-8">Aucune transaction pour le moment</p>

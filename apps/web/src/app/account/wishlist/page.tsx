@@ -51,9 +51,9 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow-sm">
+    <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-dark">Mes favoris</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-dark">Mes favoris</h1>
         <span className="text-sm text-gray-3">{displayItems.length} article{displayItems.length > 1 ? 's' : ''}</span>
       </div>
 

@@ -127,9 +127,9 @@ function TrackingTimeline({ tracking }: { tracking: TrackingData }) {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-dark">Suivi de livraison</h2>
+    <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h2 className="text-base sm:text-lg font-semibold text-dark">Suivi de livraison</h2>
         {tracking.trackingNumber && (
           <span className="rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold text-orange">
             N&deg; {tracking.trackingNumber}
@@ -365,8 +365,8 @@ export default function OrderDetailPage() {
       </Link>
 
       {/* Status timeline (horizontal — existing) */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-dark">Commande {order.code}</h1>
+      <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+        <h1 className="mb-6 text-lg sm:text-xl font-bold text-dark">Commande {order.code}</h1>
 
         <div className="relative flex items-center justify-between">
           {/* Progress line */}
@@ -383,17 +383,18 @@ export default function OrderDetailPage() {
               <div key={step.key} className="relative z-10 flex flex-col items-center">
                 <div
                   className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors',
+                    'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full border-2 transition-colors',
                     done
                       ? 'border-green bg-green text-white'
                       : 'border-gray-4 bg-white text-gray-4'
                   )}
                 >
-                  {done ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                  {done ? <CheckCircle2 size={16} className="sm:hidden" /> : <Circle size={16} className="sm:hidden" />}
+                  {done ? <CheckCircle2 size={20} className="hidden sm:block" /> : <Circle size={20} className="hidden sm:block" />}
                 </div>
                 <span
                   className={cn(
-                    'mt-2 text-xs font-medium',
+                    'mt-2 hidden sm:block text-xs font-medium',
                     done ? 'text-green' : 'text-gray-3'
                   )}
                 >
@@ -409,9 +410,9 @@ export default function OrderDetailPage() {
       {tracking && <TrackingTimeline tracking={tracking} />}
 
       {/* Order info */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-dark">Informations de la commande</h2>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+        <h2 className="mb-4 text-base sm:text-lg font-semibold text-dark">Informations de la commande</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:grid-cols-4">
           <div>
             <p className="text-xs text-gray-3">Code commande</p>
             <p className="mt-1 text-sm font-semibold text-dark">{order.code}</p>
@@ -436,8 +437,8 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Items table */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-dark">Articles commandes</h2>
+      <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+        <h2 className="mb-4 text-base sm:text-lg font-semibold text-dark">Articles commandes</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -476,10 +477,10 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Shipping address + Totals */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Shipping address */}
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-dark">Adresse de livraison</h2>
+        <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+          <h2 className="mb-4 text-base sm:text-lg font-semibold text-dark">Adresse de livraison</h2>
           <div className="space-y-1 text-sm">
             <p className="font-medium text-dark">{order.shippingAddress.name}</p>
             <p className="text-gray-2">{order.shippingAddress.phone}</p>
@@ -491,8 +492,8 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Order totals */}
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-dark">Recapitulatif</h2>
+        <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+          <h2 className="mb-4 text-base sm:text-lg font-semibold text-dark">Recapitulatif</h2>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-2">Sous-total</span>

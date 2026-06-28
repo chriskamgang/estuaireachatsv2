@@ -85,9 +85,9 @@ export default function AddressesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-dark">Mes adresses</h1>
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h1 className="text-lg sm:text-xl font-bold text-dark">Mes adresses</h1>
           <button
             onClick={openAdd}
             className="flex items-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light"
@@ -208,7 +208,7 @@ export default function AddressesPage() {
                   placeholder="Rue, quartier..."
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-1">Ville</label>
                   <input

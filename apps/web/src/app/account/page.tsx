@@ -60,10 +60,10 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       {/* User info card */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-dark">Mon profil</h1>
+      <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+        <h1 className="mb-6 text-lg sm:text-xl font-bold text-dark">Mon profil</h1>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="relative">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-orange text-2xl font-bold text-white">
               {avatarPreview ? (
@@ -93,8 +93,8 @@ export default function ProfilePage() {
       </div>
 
       {/* Edit form */}
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h2 className="mb-6 text-lg font-semibold text-dark">Modifier mes informations</h2>
+      <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
+        <h2 className="mb-6 text-base sm:text-lg font-semibold text-dark">Modifier mes informations</h2>
 
         {error && (
             <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-[#E82328]">
@@ -103,7 +103,7 @@ export default function ProfilePage() {
           )}
 
         <form onSubmit={handleSubmit} className="max-w-lg space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-1">Prenom</label>
               <input

@@ -37,7 +37,7 @@ function PaymentReturnContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F5F5F5] px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-10 text-center shadow-sm">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 sm:p-10 text-center shadow-sm">
         {paymentStatus === 'success' && (
           <>
             <CheckCircle className="mx-auto mb-6 h-20 w-20 text-green-500" />
