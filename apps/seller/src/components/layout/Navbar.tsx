@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
-import { Search, Bell, ChevronDown, User, LogOut, Store, CheckCheck } from 'lucide-react';
+import { Search, Bell, ChevronDown, User, LogOut, Store, CheckCheck, Menu } from 'lucide-react';
 import { api } from '@/lib/api';
 
 const breadcrumbMap: Record<string, string> = {
@@ -27,7 +27,11 @@ const breadcrumbMap: Record<string, string> = {
   support: 'Support',
 };
 
-export default function Navbar() {
+interface NavbarProps {
+  onMenuToggle: () => void;
+}
+
+export default function Navbar({ onMenuToggle }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
@@ -87,22 +91,27 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white shadow-sm px-6 py-3 flex items-center justify-between">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
-        {breadcrumbs.map((crumb, i) => (
-          <span key={i} className="flex items-center gap-2">
-            {i > 0 && <span className="text-gray-4">/</span>}
-            <span className={i === breadcrumbs.length - 1 ? 'text-dark font-medium' : 'text-gray-3'}>
-              {crumb}
+    <header className="sticky top-0 z-30 bg-white shadow-sm px-4 sm:px-6 py-3 flex items-center justify-between">
+      {/* Left: hamburger + breadcrumb */}
+      <div className="flex items-center gap-3">
+        <button onClick={onMenuToggle} className="lg:hidden p-2 -ml-2 hover:bg-gray-6 rounded-lg transition">
+          <Menu className="w-5 h-5 text-gray-2" />
+        </button>
+        <div className="hidden sm:flex items-center gap-2 text-sm">
+          {breadcrumbs.map((crumb, i) => (
+            <span key={i} className="flex items-center gap-2">
+              {i > 0 && <span className="text-gray-4">/</span>}
+              <span className={i === breadcrumbs.length - 1 ? 'text-dark font-medium' : 'text-gray-3'}>
+                {crumb}
+              </span>
             </span>
-          </span>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-4">
-        <button className="p-2 hover:bg-gray-6 rounded-lg transition">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button className="p-2 hover:bg-gray-6 rounded-lg transition hidden sm:block">
           <Search className="w-4 h-4 text-gray-2" />
         </button>
 
@@ -116,7 +125,7 @@ export default function Navbar() {
             )}
           </button>
           {notifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-5 z-50">
+            <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-5 z-50">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-5">
                 <span className="text-sm font-semibold text-dark">Notifications</span>
                 {unreadCount > 0 && (
@@ -158,7 +167,7 @@ export default function Navbar() {
             <span className="text-sm font-medium text-dark hidden md:block">
               {user?.shopName || user?.firstName || 'Vendeur'}
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-3" />
+            <ChevronDown className="w-3.5 h-3.5 text-gray-3 hidden sm:block" />
           </button>
 
           {dropdownOpen && (
