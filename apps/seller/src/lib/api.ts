@@ -20,8 +20,8 @@ class ApiClient {
     return headers;
   }
 
-  private async handleResponse<T>(res: Response): Promise<T> {
-    if (res.status === 401 && typeof window !== 'undefined') {
+  private async handleResponse<T>(res: Response, url: string): Promise<T> {
+    if (res.status === 401 && typeof window !== 'undefined' && !url.includes('/auth/login') && !url.includes('/auth/register')) {
       localStorage.removeItem('seller_accessToken');
       localStorage.removeItem('seller_refreshToken');
       window.location.href = '/login';
@@ -35,52 +35,58 @@ class ApiClient {
   }
 
   async get<T>(path: string): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, { headers: this.getHeaders() });
-    return this.handleResponse<T>(res);
+    const url = `${this.baseUrl}${path}`;
+    const res = await fetch(url, { headers: this.getHeaders() });
+    return this.handleResponse<T>(res, url);
   }
 
   async post<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
       body: body ? JSON.stringify(body) : undefined,
     });
-    return this.handleResponse<T>(res);
+    return this.handleResponse<T>(res, url);
   }
 
   async patch<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    const res = await fetch(url, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: body ? JSON.stringify(body) : undefined,
     });
-    return this.handleResponse<T>(res);
+    return this.handleResponse<T>(res, url);
   }
 
   async put<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    const res = await fetch(url, {
       method: 'PUT',
       headers: this.getHeaders(),
       body: body ? JSON.stringify(body) : undefined,
     });
-    return this.handleResponse<T>(res);
+    return this.handleResponse<T>(res, url);
   }
 
   async delete<T>(path: string): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    const res = await fetch(url, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
-    return this.handleResponse<T>(res);
+    return this.handleResponse<T>(res, url);
   }
 
   async upload<T>(path: string, formData: FormData): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(true),
       body: formData,
     });
-    return this.handleResponse<T>(res);
+    return this.handleResponse<T>(res, url);
   }
 }
 
