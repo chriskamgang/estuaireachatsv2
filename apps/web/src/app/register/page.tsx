@@ -66,7 +66,11 @@ function RegisterContent() {
         phone: phone || undefined,
         role: accountType === 'seller' ? 'SELLER' : 'BUYER',
       });
-      router.push(accountType === 'seller' ? (process.env.NEXT_PUBLIC_SELLER_URL || 'https://seller.estuaireachats.com') + '/dashboard' : '/');
+      if (accountType === 'seller') {
+        window.location.href = (process.env.NEXT_PUBLIC_SELLER_URL || 'https://seller.estuaireachats.com') + '/login';
+      } else {
+        router.push('/');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erreur lors de l'inscription";
       setError(message);
@@ -257,9 +261,15 @@ function RegisterContent() {
 
           <p className="mt-6 text-center text-sm text-gray-500">
             Deja un compte ?{' '}
-            <Link href="/login" className="font-medium text-[#E82328] hover:underline">
-              Se connecter
-            </Link>
+            {accountType === 'seller' ? (
+              <a href={(process.env.NEXT_PUBLIC_SELLER_URL || 'https://seller.estuaireachats.com') + '/login'} className="font-medium text-[#E82328] hover:underline">
+                Se connecter (Vendeur)
+              </a>
+            ) : (
+              <Link href="/login" className="font-medium text-[#E82328] hover:underline">
+                Se connecter
+              </Link>
+            )}
           </p>
         </div>
       </div>
