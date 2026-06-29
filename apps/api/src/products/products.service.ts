@@ -403,7 +403,17 @@ export class ProductsService {
         '-' +
         Date.now();
 
-    const { images, stocks, priceTiers, discountStart, discountEnd, ...productData } = dto;
+    const { images, stocks, priceTiers, discountStart, discountEnd, brandName, ...productData } = dto;
+
+    // If brandName provided without brandId, find or create the brand
+    if (!productData.brandId && brandName) {
+      const slug = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      let brand = await this.prisma.brand.findFirst({ where: { slug } });
+      if (!brand) {
+        brand = await this.prisma.brand.create({ data: { name: brandName, slug: slug + '-' + Date.now() } });
+      }
+      productData.brandId = brand.id;
+    }
 
     const product = await this.prisma.product.create({
       data: {

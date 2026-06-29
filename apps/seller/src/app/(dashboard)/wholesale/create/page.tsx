@@ -258,6 +258,7 @@ export default function CreateWholesaleProductPage() {
         isPublished: !asDraft,
         addedBy: 'seller',
         categoryId: sousCategorie || categorie || undefined,
+        brandName: marque || undefined,
         estShippingDays: delaiProduction === '1-3' ? 3 : delaiProduction === '3-7' ? 7 : delaiProduction === '7-15' ? 15 : 30,
         videoLink: videoLink || undefined,
         ...(images.length > 0 && { images }),

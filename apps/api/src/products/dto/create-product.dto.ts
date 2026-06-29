@@ -108,6 +108,11 @@ export class CreateProductDto {
   @IsString()
   brandId?: string;
 
+  @ApiPropertyOptional({ description: 'Nom de la marque (cree automatiquement si nouvelle)' })
+  @IsOptional()
+  @IsString()
+  brandName?: string;
+
   @ApiPropertyOptional({ enum: ProductMode, default: 'BOTH' })
   @IsOptional()
   @IsEnum(ProductMode)

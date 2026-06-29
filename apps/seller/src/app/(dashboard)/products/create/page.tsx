@@ -81,6 +81,7 @@ export default function CreateProductPage() {
   const [categorie, setCategorie] = useState('');
   const [sousCategorie, setSousCategorie] = useState('');
   const [brandId, setBrandId] = useState('');
+  const [brandName, setBrandName] = useState('');
   const [unite, setUnite] = useState('piece');
   const [poids, setPoids] = useState('');
   const [moq, setMoq] = useState('1');
@@ -216,7 +217,11 @@ export default function CreateProductPage() {
       if (data.nom) setNom(data.nom);
       if (data.descriptionCourte) setShortDesc(data.descriptionCourte);
       if (data.description) setDescription(data.description);
-      if (data.marque) { /* Could match brand */ }
+      if (data.marque) {
+        setBrandName(data.marque);
+        const match = brands.find((b) => b.label.toLowerCase() === data.marque.toLowerCase());
+        setBrandId(match ? match.value : '');
+      }
       if (data.tags) setTags(data.tags);
       if (data.moq) setMoq(String(data.moq));
       if (data.seoTitle) setSeoTitle(data.seoTitle);
@@ -333,6 +338,7 @@ export default function CreateProductPage() {
         shortDesc: shortDesc || undefined,
         categoryId: sousCategorie || categorie || undefined,
         brandId: brandId || undefined,
+        brandName: !brandId && brandName ? brandName : undefined,
         price: prixUnitaire ? Number(prixUnitaire) : undefined,
         minOrderQty: moq ? Number(moq) : 1,
         unit: unite || 'piece',
@@ -425,10 +431,20 @@ export default function CreateProductPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Marque</label>
-                  <select value={brandId} onChange={(e) => setBrandId(e.target.value)} className={inputClass}>
-                    <option value="">Selectionner une marque</option>
-                    {brands.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
-                  </select>
+                  <input
+                    list="brands-list"
+                    value={brandName}
+                    onChange={(e) => {
+                      setBrandName(e.target.value);
+                      const match = brands.find((b) => b.label.toLowerCase() === e.target.value.toLowerCase());
+                      setBrandId(match ? match.value : '');
+                    }}
+                    placeholder="Tapez ou selectionnez une marque"
+                    className={inputClass}
+                  />
+                  <datalist id="brands-list">
+                    {brands.map((b) => <option key={b.value} value={b.label} />)}
+                  </datalist>
                 </div>
               </div>
 
