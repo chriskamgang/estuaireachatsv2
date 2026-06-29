@@ -45,6 +45,7 @@ const PRODUCT_ANALYZE_PROMPT = `Analyse cette image de produit pour une platefor
 Reponds UNIQUEMENT en JSON valide avec cette structure exacte :
 {
   "nom": "Nom commercial du produit (concis, professionnel)",
+  "descriptionCourte": "Resume en 1 phrase (max 150 caracteres) pour les listes produits.",
   "description": "Description detaillee du produit en 3-5 phrases. Inclus les caracteristiques techniques, materiaux, usages, avantages. Adapte au marche africain.",
   "categorie": "une parmi: materiaux|textiles|electronique|auto|equipement|alimentaire|beaute|mode-femme|mode-homme|accessoires|chaussures|maison",
   "marque": "Marque suggeree ou 'Generique'",

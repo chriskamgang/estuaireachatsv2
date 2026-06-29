@@ -214,6 +214,7 @@ export default function CreateProductPage() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Erreur analyse IA'); }
       const data = await res.json();
       if (data.nom) setNom(data.nom);
+      if (data.descriptionCourte) setShortDesc(data.descriptionCourte);
       if (data.description) setDescription(data.description);
       if (data.marque) { /* Could match brand */ }
       if (data.tags) setTags(data.tags);
