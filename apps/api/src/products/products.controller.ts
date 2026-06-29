@@ -83,8 +83,8 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Telecharger le template CSV d\'import produits (ADMIN/SELLER)' })
   downloadImportTemplate(@Res() res: Response) {
-    const headers = ['name', 'description', 'price', 'category', 'brand', 'stock', 'sku', 'tags', 'status'];
-    const exampleRow = ['Exemple Produit', 'Description du produit', '15000', 'electronique', 'Samsung', '100', 'SKU-001', 'tag1;tag2', 'DRAFT'];
+    const headers = ['name', 'description', 'price', 'category', 'brand', 'stock', 'sku', 'tags', 'status', 'minOrderQty', 'unit', 'shortDescription'];
+    const exampleRow = ['Exemple Produit', 'Description detaillee du produit', '15000', 'electronique', 'Samsung', '100', 'SKU-001', 'tag1;tag2', 'DRAFT', '10', 'piece', 'Description courte pour les listes'];
     const csv = headers.join(',') + '\n' + exampleRow.join(',') + '\n';
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename=template-import-produits.csv');

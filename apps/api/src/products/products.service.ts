@@ -586,25 +586,22 @@ export class ProductsService {
     const skuIdx = headers.indexOf('sku');
     const tagsIdx = headers.indexOf('tags');
     const statusIdx = headers.indexOf('status');
+    const moqIdx = headers.indexOf('minorderqty');
+    const unitIdx = headers.indexOf('unit');
+    const shortDescIdx = headers.indexOf('shortdescription');
 
     if (nameIdx === -1) {
       throw new NotFoundException('Colonne "name" requise dans le CSV');
     }
 
-    // Find or create admin shop
-    let shop = await this.prisma.shop.findFirst({
-      where: { user: { role: 'ADMIN' } },
-    });
+    // Find the seller's shop (or admin shop as fallback)
+    let shop = await this.prisma.shop.findUnique({ where: { userId } });
     if (!shop) {
-      shop = await this.prisma.shop.create({
-        data: {
-          userId,
-          name: 'EstuaireAchats Official',
-          slug: 'estuaireachats-official',
-          status: 'ACTIVE',
-          verified: true,
-        },
-      });
+      // Fallback: find admin shop
+      shop = await this.prisma.shop.findFirst({ where: { user: { role: 'ADMIN' } } });
+    }
+    if (!shop) {
+      throw new NotFoundException('Aucune boutique trouvee. Creez votre boutique d\'abord.');
     }
 
     // Cache categories and brands
@@ -637,19 +634,26 @@ export class ProductsService {
 
         const validStatuses = ['DRAFT', 'ACTIVE', 'INACTIVE', 'OUT_OF_STOCK'];
         const finalStatus = validStatuses.includes(status) ? status : 'DRAFT';
+        const moq = moqIdx >= 0 ? parseInt(cols[moqIdx]) || 1 : 1;
+        const unit = unitIdx >= 0 ? cols[unitIdx] || 'piece' : 'piece';
+        const shortDesc = shortDescIdx >= 0 ? cols[shortDescIdx] || '' : '';
 
         await this.prisma.product.create({
           data: {
             name,
             slug,
             description: descIdx >= 0 ? cols[descIdx] || '' : '',
+            shortDesc,
             price,
+            minOrderQty: moq,
+            unit,
+
             shopId: shop.id,
             categoryId: catMap.get(categoryName) || null,
             brandId: brandMap.get(brandName) || null,
             tags,
             status: finalStatus as any,
-            addedBy: 'admin',
+            addedBy: 'seller',
             ...(stockQty > 0 && {
               stocks: {
                 create: {
