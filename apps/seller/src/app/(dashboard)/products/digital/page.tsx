@@ -28,7 +28,7 @@ export default function DigitalProductsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<{ data: Product[]; meta: { total: number } }>('/products/admin/all?perPage=200')
+    api.get<{ data: Product[]; meta: { total: number } }>('/products/seller/my-products?perPage=200')
       .then((res) => {
         setProducts(res.data.filter((p) => p.isDigital || p.productType === 'DIGITAL'));
       })

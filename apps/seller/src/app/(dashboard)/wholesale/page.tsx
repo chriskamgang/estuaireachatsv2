@@ -28,7 +28,7 @@ export default function WholesalePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<{ data: Product[]; meta: { total: number } }>('/products/admin/all?perPage=200')
+    api.get<{ data: Product[]; meta: { total: number } }>('/products/seller/my-products?perPage=200')
       .then((res) => setProducts(res.data.filter((p) => p.isWholesale || p.mode === 'WHOLESALE')))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));

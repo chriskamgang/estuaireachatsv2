@@ -162,6 +162,48 @@ export class ProductsService {
     };
   }
 
+  async findSellerProducts(userId: string, query: ProductQueryDto) {
+    const { search, sort } = query;
+    const page = query.page ?? 1;
+    const perPage = query.perPage ?? 200;
+    const skip = (page - 1) * perPage;
+
+    const shop = await this.prisma.shop.findFirst({ where: { userId }, select: { id: true } });
+    if (!shop) return { result: true, data: [], meta: { total: 0, page, perPage, lastPage: 0 } };
+
+    const where: Prisma.ProductWhereInput = {
+      shopId: shop.id,
+      ...(search && {
+        OR: [
+          { name: { contains: search } },
+          { description: { contains: search } },
+        ],
+      }),
+    };
+
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    if (sort === 'price_asc') orderBy = { price: 'asc' };
+    else if (sort === 'price_desc') orderBy = { price: 'desc' };
+
+    const adminSelect = {
+      ...productListSelect,
+      stocks: {
+        select: { id: true, variant: true, price: true, qty: true, sku: true },
+      },
+    };
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({ where, select: adminSelect, orderBy, skip, take: perPage }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      result: true,
+      data: products,
+      meta: { total, page, perPage, lastPage: Math.ceil(total / perPage) },
+    };
+  }
+
   async findAll(query: ProductQueryDto, userId?: string) {
     const { search, categoryId, brandId, shopId, minPrice, maxPrice, sort, origin } = query;
     const page = query.page ?? 1;

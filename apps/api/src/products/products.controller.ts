@@ -49,6 +49,18 @@ export class ProductsController {
     return this.productsService.findAllAdmin(query);
   }
 
+  @Get('seller/my-products')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Produits du vendeur connecte (SELLER)' })
+  findSellerProducts(
+    @CurrentUser('id') userId: string,
+    @Query() query: ProductQueryDto,
+  ) {
+    return this.productsService.findSellerProducts(userId, query);
+  }
+
   @Get('admin/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'STAFF')

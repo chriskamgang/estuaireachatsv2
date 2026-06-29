@@ -29,7 +29,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
-    api.get<{ data: Product[]; meta: { total: number } }>('/products/admin/all?perPage=200')
+    api.get<{ data: Product[]; meta: { total: number } }>('/products/seller/my-products?perPage=200')
       .then((res) => setProducts(res.data))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));

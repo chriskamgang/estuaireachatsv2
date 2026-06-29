@@ -87,20 +87,34 @@ IMPORTANT:
 - Les paliers de prix doivent etre degressifs
 - Pas de markdown, pas de commentaires, JUSTE le JSON`;
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json(null, { headers: corsHeaders });
+}
+
+function jsonCors(data: unknown, status = 200) {
+  return NextResponse.json(data, { status, headers: corsHeaders });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const apiKey = await getGeminiKey();
     if (!apiKey) {
-      return NextResponse.json(
+      return jsonCors(
         { error: 'Cle API Gemini non configuree. Configurez-la dans Admin > Parametres > IA.' },
-        { status: 500 }
+        500
       );
     }
 
     const { image, mimeType } = await req.json();
 
     if (!image) {
-      return NextResponse.json({ error: 'Image requise' }, { status: 400 });
+      return jsonCors({ error: 'Image requise' }, 400);
     }
 
     // Appel API Gemini avec image en base64
@@ -123,7 +137,7 @@ export async function POST(req: NextRequest) {
     if (!geminiRes.ok) {
       const errData = await geminiRes.json().catch(() => ({}));
       const errMsg = errData?.error?.message || `Erreur Gemini API (${geminiRes.status})`;
-      return NextResponse.json({ error: errMsg }, { status: 500 });
+      return jsonCors({ error: errMsg }, 500);
     }
 
     const geminiData = await geminiRes.json();
@@ -136,9 +150,9 @@ export async function POST(req: NextRequest) {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       productData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     } catch {
-      return NextResponse.json(
+      return jsonCors(
         { error: 'Erreur d\'analyse de la reponse IA', raw: text },
-        { status: 500 }
+        500
       );
     }
 
@@ -148,12 +162,12 @@ export async function POST(req: NextRequest) {
       5
     );
 
-    return NextResponse.json({
+    return jsonCors({
       ...productData,
       suggestedImages: unsplashImages,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return jsonCors({ error: message }, 500);
   }
 }
