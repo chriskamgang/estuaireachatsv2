@@ -37,7 +37,7 @@ export class AffiliateController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "S'inscrire au programme d'affiliation" })
-  register(@CurrentUser('sub') userId: string) {
+  register(@CurrentUser('id') userId: string) {
     return this.affiliateService.register(userId);
   }
 
@@ -45,7 +45,7 @@ export class AffiliateController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mon profil affilie' })
-  getMyAffiliate(@CurrentUser('sub') userId: string) {
+  getMyAffiliate(@CurrentUser('id') userId: string) {
     return this.affiliateService.getMyAffiliate(userId);
   }
 
@@ -56,7 +56,7 @@ export class AffiliateController {
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'perPage', required: false, type: Number, example: 20 })
   getMyLogs(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('perPage', new DefaultValuePipe(20), ParseIntPipe) perPage: number,
   ) {
@@ -68,7 +68,7 @@ export class AffiliateController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Demander un retrait des gains affilie' })
   requestWithdraw(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body('amount') amount: number,
   ) {
     return this.affiliateService.requestWithdraw(userId, amount);

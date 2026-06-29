@@ -30,7 +30,7 @@ export class WithdrawsController {
   @Roles('SELLER')
   @ApiOperation({ summary: 'Demander un retrait (SELLER)' })
   async create(
-    @CurrentUser('sub') sellerId: string,
+    @CurrentUser('id') sellerId: string,
     @Body() dto: CreateWithdrawDto,
   ) {
     return this.withdrawsService.create(sellerId, dto);
@@ -41,7 +41,7 @@ export class WithdrawsController {
   @Roles('SELLER')
   @ApiOperation({ summary: 'Mes demandes de retrait + solde (SELLER)' })
   async myWithdraws(
-    @CurrentUser('sub') sellerId: string,
+    @CurrentUser('id') sellerId: string,
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 20,
   ) {
@@ -68,7 +68,7 @@ export class WithdrawsController {
   @ApiOperation({ summary: 'Approuver un retrait et envoyer via KPay (ADMIN)' })
   async approve(
     @Param('id') id: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: ProcessWithdrawDto,
   ) {
     return this.withdrawsService.approve(id, adminId, dto);
@@ -80,7 +80,7 @@ export class WithdrawsController {
   @ApiOperation({ summary: 'Rejeter un retrait (ADMIN)' })
   async reject(
     @Param('id') id: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: ProcessWithdrawDto,
   ) {
     return this.withdrawsService.reject(id, adminId, dto);

@@ -39,7 +39,7 @@ export class SellerPackagesController {
   @Roles('SELLER')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mon abonnement actuel (SELLER)' })
-  getMySubscription(@CurrentUser('sub') userId: string) {
+  getMySubscription(@CurrentUser('id') userId: string) {
     return this.service.getMySubscription(userId);
   }
 
@@ -51,7 +51,7 @@ export class SellerPackagesController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'perPage', required: false, type: Number })
   getMyPurchases(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Query('page') page?: string,
     @Query('perPage') perPage?: string,
   ) {
@@ -68,7 +68,7 @@ export class SellerPackagesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "S'abonner a un package (SELLER)" })
   subscribe(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: SubscribePackageDto,
   ) {
     return this.service.subscribe(userId, dto.packageId, dto.paymentMethod);
