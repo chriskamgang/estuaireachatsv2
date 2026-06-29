@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Plus, X, Boxes, Bot, Loader2, Sparkles, CheckCircle, ArrowLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 
-const AI_API_URL = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/ai-product-analyze`;
+const AI_API_URL = '/api/ai-product-analyze';
 
 interface CategoryOption {
   value: string;

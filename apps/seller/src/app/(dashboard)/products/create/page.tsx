@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, X, PackagePlus, Bot, Loader2, Sparkles, CheckCircle, ImagePlus, Video, Star, FileText, Tag } from 'lucide-react';
 import { api } from '@/lib/api';
 
-const AI_API_URL = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/ai-product-analyze`;
+const AI_API_URL = '/api/ai-product-analyze';
 
 interface CategoryOption { value: string; label: string; children?: CategoryOption[] }
 interface BrandOption { value: string; label: string }
