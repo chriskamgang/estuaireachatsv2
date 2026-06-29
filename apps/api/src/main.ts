@@ -32,6 +32,13 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:3002',
       'http://localhost:3003',
+      'https://estuaireachats.com',
+      'https://www.estuaireachats.com',
+      'https://admin.estuaireachats.com',
+      'https://seller.estuaireachats.com',
+      'http://estuaireachats.com',
+      'http://admin.estuaireachats.com',
+      'http://seller.estuaireachats.com',
     ],
     credentials: true,
   });
