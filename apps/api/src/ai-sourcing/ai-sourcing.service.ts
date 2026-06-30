@@ -16,6 +16,51 @@ export class AiSourcingService {
     private httpService: HttpService,
   ) {}
 
+  private getGeminiKeys(): string[] {
+    const keys: string[] = [];
+    const multiKeys = process.env.GEMINI_API_KEYS;
+    if (multiKeys) {
+      keys.push(...multiKeys.split(',').map(k => k.trim()).filter(Boolean));
+    }
+    const singleKey = process.env.GEMINI_API_KEY;
+    if (singleKey && !keys.includes(singleKey)) {
+      keys.push(singleKey);
+    }
+    return keys;
+  }
+
+  private async callGeminiWithRotation(body: object): Promise<{ data?: any; error?: string }> {
+    const keys = this.getGeminiKeys();
+    if (keys.length === 0) {
+      return { error: 'GEMINI_API_KEY non configuree' };
+    }
+
+    for (const key of keys) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (res.ok) {
+        return { data: await res.json() };
+      }
+
+      if (res.status === 429) {
+        this.logger.warn(`Gemini key ...${key.slice(-6)} quota exceeded, trying next key`);
+        continue;
+      }
+
+      const errData = await res.json().catch(() => ({}));
+      return { error: errData?.error?.message || `Erreur Gemini (${res.status})` };
+    }
+
+    return { error: 'Toutes les cles API Gemini ont atteint leur quota' };
+  }
+
   /**
    * Recherche assistee par Gemini AI.
    * Envoie la requete utilisateur a Gemini pour extraire des mots-cles structures,
@@ -32,24 +77,17 @@ export class AiSourcingService {
     const { query } = dto;
 
     try {
-      const geminiKey = process.env.GEMINI_API_KEY;
-      if (!geminiKey) {
-        this.logger.warn('GEMINI_API_KEY non configuree, fallback vers recherche basique');
+      if (this.getGeminiKeys().length === 0) {
+        this.logger.warn('GEMINI_API_KEYS non configuree, fallback vers recherche basique');
         return this.search(dto);
       }
 
-      // Appel a l'API Gemini pour analyser la requete utilisateur
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: query }] }],
-            systemInstruction: {
-              parts: [
-                {
-                  text: `Tu es un assistant de sourcing intelligent pour EstuaireAchats, une plateforme e-commerce B2B au Cameroun (comme Alibaba).
+      const geminiResult = await this.callGeminiWithRotation({
+        contents: [{ role: 'user', parts: [{ text: query }] }],
+        systemInstruction: {
+          parts: [
+            {
+              text: `Tu es un assistant de sourcing intelligent pour EstuaireAchats, une plateforme e-commerce B2B au Cameroun (comme Alibaba).
 
 Analyse la demande de l'utilisateur et determine son INTENTION :
 1. "search" — L'utilisateur cherche un produit ou fournisseur specifique (ex: "smartphone Samsung", "ciment Portland")
@@ -79,25 +117,22 @@ Si intention = "help":
 
 Exemples de "help": "aide moi a concevoir un produit", "comment trouver un bon fournisseur", "je veux lancer un business", "quels sont les produits tendance".
 Exemples de "search": "ciment 50kg", "telephone Samsung", "fournisseur de vetements".`,
-                },
-              ],
             },
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 500,
-            },
-          }),
+          ],
         },
-      );
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 500,
+        },
+      });
 
-      if (!geminiResponse.ok) {
-        this.logger.error(`Gemini API erreur HTTP ${geminiResponse.status}`);
+      if (geminiResult.error) {
+        this.logger.error(`Gemini: ${geminiResult.error}`);
         return this.search(dto);
       }
 
-      const geminiData = await geminiResponse.json();
       const rawText =
-        geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
       // Parser le JSON retourne par Gemini
       let parsed: {

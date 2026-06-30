@@ -2,15 +2,53 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-async function getGeminiKey(): Promise<string> {
-  try {
-    const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
+function getGeminiKeys(): string[] {
+  const keys: string[] = [];
+  // Support multiple keys via GEMINI_API_KEYS (comma-separated) or single GEMINI_API_KEY
+  const multiKeys = process.env.GEMINI_API_KEYS;
+  if (multiKeys) {
+    keys.push(...multiKeys.split(',').map(k => k.trim()).filter(Boolean));
+  }
+  const singleKey = process.env.GEMINI_API_KEY;
+  if (singleKey && !keys.includes(singleKey)) {
+    keys.push(singleKey);
+  }
+  return keys;
+}
+
+async function callGeminiWithRotation(body: object): Promise<{ data?: any; error?: string }> {
+  const keys = getGeminiKeys();
+  if (keys.length === 0) {
+    return { error: 'Cle API Gemini non configuree. Configurez GEMINI_API_KEYS dans les variables d\'environnement.' };
+  }
+
+  for (const key of keys) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+
     if (res.ok) {
       const data = await res.json();
-      if (data.key) return data.key;
+      return { data };
     }
-  } catch {}
-  return process.env.GEMINI_API_KEY || '';
+
+    // 429 = quota exceeded, try next key
+    if (res.status === 429) {
+      console.log(`Gemini key ...${key.slice(-6)} quota exceeded, trying next key`);
+      continue;
+    }
+
+    // Other error, return it
+    const errData = await res.json().catch(() => ({}));
+    return { error: errData?.error?.message || `Erreur Gemini API (${res.status})` };
+  }
+
+  return { error: 'Toutes les cles API Gemini ont atteint leur quota. Reessayez demain ou ajoutez de nouvelles cles.' };
 }
 
 async function getUnsplashKey(): Promise<string> {
@@ -88,44 +126,26 @@ IMPORTANT:
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = await getGeminiKey();
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Cle API Gemini non configuree. Configurez-la dans Admin > Parametres > IA.' },
-        { status: 500 }
-      );
-    }
-
     const { image, mimeType } = await req.json();
 
     if (!image) {
       return NextResponse.json({ error: 'Image requise' }, { status: 400 });
     }
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: PRODUCT_ANALYZE_PROMPT },
-              { inlineData: { mimeType: mimeType || 'image/jpeg', data: image } },
-            ],
-          }],
-        }),
-      }
-    );
+    const geminiResult = await callGeminiWithRotation({
+      contents: [{
+        parts: [
+          { text: PRODUCT_ANALYZE_PROMPT },
+          { inlineData: { mimeType: mimeType || 'image/jpeg', data: image } },
+        ],
+      }],
+    });
 
-    if (!geminiRes.ok) {
-      const errData = await geminiRes.json().catch(() => ({}));
-      const errMsg = errData?.error?.message || `Erreur Gemini API (${geminiRes.status})`;
-      return NextResponse.json({ error: errMsg }, { status: 500 });
+    if (geminiResult.error) {
+      return NextResponse.json({ error: geminiResult.error }, { status: 500 });
     }
 
-    const geminiData = await geminiRes.json();
-    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     let productData;
     try {
