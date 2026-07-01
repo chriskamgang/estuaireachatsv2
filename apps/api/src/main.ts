@@ -8,14 +8,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true, // Necessaire pour verifier les signatures webhook KPay
-    bodyParser: false,
   });
 
   // Augmenter la limite du body (images base64)
-  const expressJson = require('express').json;
-  const expressUrlencoded = require('express').urlencoded;
-  app.use(expressJson({ limit: '50mb' }));
-  app.use(expressUrlencoded({ extended: true, limit: '50mb' }));
+  app.useBodyParser('json', { limit: '50mb' });
+  app.useBodyParser('urlencoded', { limit: '50mb' });
 
   // Servir les fichiers uploades
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
