@@ -3,12 +3,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true, // Necessaire pour verifier les signatures webhook KPay
   });
+
+  // Augmenter la limite du body (images base64)
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // Servir les fichiers uploades
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
