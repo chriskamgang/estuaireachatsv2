@@ -524,34 +524,63 @@ export default function ProductDetailPage() {
               })()}
 
               {/* Variants / Choice Options (Pointure, Couleur, etc.) */}
-              {product.choiceOptions && Array.isArray(product.choiceOptions) && product.choiceOptions.length > 0 && (
-                <div className="mb-5 space-y-3">
-                  {product.choiceOptions.map((choice: any, ci: number) => (
-                    <div key={ci}>
-                      <h4 className="text-sm font-semibold text-dark mb-2">{choice.name}</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(choice.options || []).map((opt: string) => {
-                          const stateKey = `choice_${ci}`;
-                          const isSelected = (selectedChoices[stateKey] || choice.options[0]) === opt;
-                          return (
-                            <button
-                              key={opt}
-                              onClick={() => setSelectedChoices(prev => ({ ...prev, [stateKey]: opt }))}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                                isSelected
-                                  ? 'border-orange bg-orange/10 text-orange'
-                                  : 'border-gray-5 text-gray-2 hover:border-orange hover:text-orange'
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          );
-                        })}
+              {(() => {
+                const raw = product.choiceOptions;
+                if (!raw) return null;
+                // Normalize: accept both array [{name, options}] and object {key: [values]}
+                let choices: { name: string; options: string[] }[] = [];
+                if (Array.isArray(raw)) {
+                  choices = raw.filter((c: any) => c.name && c.options?.length > 0);
+                } else if (typeof raw === 'object') {
+                  choices = Object.entries(raw)
+                    .filter(([, vals]) => Array.isArray(vals) && (vals as string[]).length > 0)
+                    .map(([key, vals]) => ({
+                      name: key.charAt(0).toUpperCase() + key.slice(1),
+                      options: vals as string[],
+                    }));
+                }
+                if (choices.length === 0) return null;
+
+                // Also check product.colors
+                const colorChoices = product.colors && product.colors.length > 0
+                  ? [{ name: 'Couleur', options: product.colors }]
+                  : [];
+                const allChoices = [...colorChoices, ...choices];
+
+                return (
+                  <div className="mb-5 space-y-3">
+                    {allChoices.map((choice, ci) => (
+                      <div key={ci}>
+                        <h4 className="text-sm font-semibold text-dark mb-2">{choice.name}</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {choice.options.map((opt: string) => {
+                            const stateKey = `choice_${ci}`;
+                            const isSelected = (selectedChoices[stateKey] || choice.options[0]) === opt;
+                            const isColor = choice.name.toLowerCase() === 'couleur' && opt.startsWith('#');
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => setSelectedChoices(prev => ({ ...prev, [stateKey]: opt }))}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                                  isSelected
+                                    ? 'border-orange bg-orange/10 text-orange'
+                                    : 'border-gray-5 text-gray-2 hover:border-orange hover:text-orange'
+                                }`}
+                              >
+                                {isColor ? (
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-4 h-4 rounded-full border border-gray-300" style={{ backgroundColor: opt }} />
+                                  </span>
+                                ) : opt}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Quantity (in center like Alibaba) */}
               <div className="mb-6">
@@ -590,7 +619,8 @@ export default function ProductDetailPage() {
                     if (!token) { router.push('/login'); return; }
                     setAddingToCart(true);
                     try {
-                      await addToCart(product.id, quantity);
+                      const variation = Object.values(selectedChoices).filter(Boolean).join('-') || undefined;
+                      await addToCart(product.id, quantity, variation);
                       setCartMessage('Produit ajoute au panier !');
                       setTimeout(() => setCartMessage(null), 3000);
                     } catch (err: any) {
@@ -611,7 +641,8 @@ export default function ProductDetailPage() {
                     if (!token) { router.push('/login'); return; }
                     setAddingToCart(true);
                     try {
-                      await addToCart(product.id, quantity);
+                      const variation = Object.values(selectedChoices).filter(Boolean).join('-') || undefined;
+                      await addToCart(product.id, quantity, variation);
                       router.push('/cart');
                     } catch (err: any) {
                       setCartMessage(err?.message || 'Erreur lors de l\'ajout');
