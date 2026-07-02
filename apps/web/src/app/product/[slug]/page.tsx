@@ -75,6 +75,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('attributes');
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartMessage, setCartMessage] = useState<string | null>(null);
+  const [clientCity, setClientCity] = useState<string | null>(null);
   const { addToCart } = useCartStore();
   const recommendRef = useRef<HTMLDivElement>(null);
 
@@ -136,6 +137,12 @@ export default function ProductDetailPage() {
     // Produits recommandes
     api.get<{ data: Product[] }>('/products?perPage=10')
       .then(r => setRecommendedProducts(r.data || []))
+      .catch(() => {});
+
+    // Detecter la ville du client via IP
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(data => { if (data.city) setClientCity(data.city); })
       .catch(() => {});
   }, [slug]);
 
@@ -456,11 +463,15 @@ export default function ProductDetailPage() {
                     </div>
                   );
                 }
-                // Local product (Cameroon)
+                // Local product (Cameroon) — Merci E delivery
+                const shopCity = (product.shop?.city || '').toLowerCase();
+                const userCity = (clientCity || '').toLowerCase();
+                const sameCity = shopCity && userCity && shopCity === userCity;
+
                 return (
                   <div className="mb-5 bg-green/5 border border-green/20 rounded-lg p-4">
                     <p className="text-xs font-semibold text-dark mb-3 flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5 text-green" /> Estimation livraison
+                      <Truck className="w-3.5 h-3.5 text-green" /> Livraison par Merci E
                     </p>
                     <div className="flex items-center gap-0">
                       {/* Seller */}
@@ -474,10 +485,12 @@ export default function ProductDetailPage() {
                       {/* Line with Merci E */}
                       <div className="flex-1 flex flex-col items-center mx-2">
                         <div className="w-full h-[2px] bg-green/30 relative">
-                          <div className="absolute inset-0 bg-green/60" style={{ width: '80%' }} />
+                          <div className="absolute inset-0 bg-green" style={{ width: sameCity ? '95%' : '70%' }} />
                         </div>
                         <p className="text-[10px] text-green font-bold mt-1">Merci E</p>
-                        <p className="text-[10px] text-green/70">{product.estShippingDays || localDays}-{(product.estShippingDays || localDays) + 2}j</p>
+                        <p className="text-[10px] text-green/70 font-semibold">
+                          {sameCity ? '< 2 heures' : '1-2 jours'}
+                        </p>
                       </div>
                       {/* Client */}
                       <div className="flex flex-col items-center">
@@ -485,7 +498,26 @@ export default function ProductDetailPage() {
                           <Truck className="w-4 h-4 text-green" />
                         </div>
                         <p className="text-[11px] font-semibold text-dark mt-1.5">Client</p>
+                        {clientCity && <p className="text-[10px] text-gray-3">{clientCity}</p>}
                       </div>
+                    </div>
+                    {/* Info message */}
+                    <div className="mt-3 bg-white rounded-md p-2.5 border border-green/10">
+                      {sameCity ? (
+                        <p className="text-[11px] text-dark leading-relaxed">
+                          <span className="font-bold text-green">Livraison express !</span> Vous etes a {clientCity}, comme le vendeur.
+                          Votre commande sera livree en <span className="font-bold">moins de 2 heures</span> par notre partenaire <span className="font-bold text-green">Merci E</span>.
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-dark leading-relaxed">
+                          La livraison est assuree par notre partenaire <span className="font-bold text-green">Merci E</span> sur tout le territoire camerounais.
+                          {clientCity ? (
+                            <span> Livraison de {product.shop?.city || 'la boutique'} vers {clientCity} en <span className="font-bold">1 a 2 jours ouvrables</span>.</span>
+                          ) : (
+                            <span> Delai : <span className="font-bold">meme ville = moins de 2h</span>, hors ville = <span className="font-bold">1 a 2 jours max</span>.</span>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -640,13 +672,47 @@ export default function ProductDetailPage() {
           <div className="w-[300px] shrink-0">
             <div className="bg-white rounded-lg p-5 sticky top-4 space-y-5">
               {/* Shipping */}
-              <div>
-                <h4 className="text-[15px] font-bold text-dark mb-2">Expedition</h4>
-                <p className="text-sm text-gray-2 leading-relaxed">
-                  Les frais d&apos;expedition et la date de livraison sont a negocier.
-                  Contactez le fournisseur pour plus de details.
-                </p>
-              </div>
+              {(() => {
+                const originCountry = (product.origin || product.shop?.country || 'CM').toUpperCase();
+                const isLocal = originCountry === 'CM';
+                const shopCity = (product.shop?.city || '').toLowerCase();
+                const userCity = (clientCity || '').toLowerCase();
+                const sameCity = shopCity && userCity && shopCity === userCity;
+
+                if (isLocal) {
+                  return (
+                    <div>
+                      <h4 className="text-[15px] font-bold text-dark mb-2 flex items-center gap-1.5">
+                        <Truck className="w-4 h-4 text-green" /> Livraison
+                      </h4>
+                      <div className="bg-green/5 rounded-lg p-3 space-y-1.5">
+                        <p className="text-xs text-dark font-medium">
+                          Livraison par <span className="text-green font-bold">Merci E</span>
+                        </p>
+                        {sameCity ? (
+                          <p className="text-xs text-green font-bold">Livree en moins de 2h</p>
+                        ) : clientCity ? (
+                          <p className="text-xs text-dark">Livree en <span className="font-bold">1-2 jours</span> a {clientCity}</p>
+                        ) : (
+                          <>
+                            <p className="text-xs text-dark">Meme ville : <span className="font-bold text-green">&lt; 2 heures</span></p>
+                            <p className="text-xs text-dark">Hors ville : <span className="font-bold">1-2 jours</span></p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div>
+                    <h4 className="text-[15px] font-bold text-dark mb-2">Expedition</h4>
+                    <p className="text-sm text-gray-2 leading-relaxed">
+                      Les frais d&apos;expedition et la date de livraison sont a negocier.
+                      Contactez le fournisseur pour plus de details.
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Subtotal breakdown */}
               <div className="border-t border-gray-5 pt-4 space-y-2">
@@ -656,7 +722,12 @@ export default function ProductDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-2">Expedition</span>
-                  <span className="text-sm text-gray-3">A negocier</span>
+                  {(() => {
+                    const originCountry = (product.origin || product.shop?.country || 'CM').toUpperCase();
+                    return originCountry === 'CM'
+                      ? <span className="text-sm text-green font-medium">Merci E</span>
+                      : <span className="text-sm text-gray-3">A negocier</span>;
+                  })()}
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-gray-5">
                   <span className="text-sm font-bold text-dark">Sous-total</span>
