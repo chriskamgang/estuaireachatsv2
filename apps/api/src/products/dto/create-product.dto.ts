@@ -239,6 +239,10 @@ export class CreateProductDto {
   @IsString()
   addedBy?: string;
 
+  @ApiPropertyOptional({ description: 'Options de choix (attributs/variantes)' })
+  @IsOptional()
+  choiceOptions?: Record<string, string[]>;
+
   @ApiPropertyOptional({ type: [CreateProductImageDto] })
   @IsOptional()
   @IsArray()

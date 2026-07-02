@@ -707,11 +707,18 @@ export class ProductsService {
       throw new ForbiddenException('Vous ne pouvez supprimer que vos propres produits');
     }
 
-    // Soft delete : on passe le status a INACTIVE et isPublished a false
-    await this.prisma.product.update({
-      where: { id: productId },
-      data: { status: 'INACTIVE', isPublished: false },
-    });
+    // Supprimer les relations puis le produit
+    await this.prisma.$transaction([
+      this.prisma.productImage.deleteMany({ where: { productId } }),
+      this.prisma.productStock.deleteMany({ where: { productId } }),
+      this.prisma.priceTier.deleteMany({ where: { productId } }),
+      this.prisma.review.deleteMany({ where: { productId } }),
+      this.prisma.cartItem.deleteMany({ where: { productId } }),
+      this.prisma.wishlist.deleteMany({ where: { productId } }),
+      this.prisma.productTranslation.deleteMany({ where: { productId } }),
+      this.prisma.productCustomization.deleteMany({ where: { productId } }),
+      this.prisma.product.delete({ where: { id: productId } }),
+    ]);
 
     return { result: true, data: { message: 'Produit supprime avec succes' } };
   }
