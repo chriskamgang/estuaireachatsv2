@@ -394,14 +394,11 @@ export class ProductsService {
       shopId = shop.id;
     }
 
-    const slug =
-      dto.slug ||
-      dto.name
+    const baseSlug = dto.slug || dto.name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '') +
-        '-' +
-        Date.now();
+        .replace(/^-|-$/g, '');
+    const slug = baseSlug + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
     const { images, stocks, priceTiers, discountStart, discountEnd, brandName, ...productData } = dto;
 
