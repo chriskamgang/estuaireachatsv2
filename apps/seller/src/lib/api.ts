@@ -88,6 +88,18 @@ class ApiClient {
     });
     return this.handleResponse<T>(res, url);
   }
+
+  async uploadImage(file: File | Blob, fileName?: string): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file, fileName || 'image.jpg');
+    const res = await this.upload<{ result: boolean; data: { url: string } }>('/upload', formData);
+    // Return full URL
+    return `${this.baseUrl.replace('/api/v1', '')}${res.data.url}`;
+  }
+
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
 }
 
 export const api = new ApiClient(API_URL);

@@ -317,19 +317,50 @@ export default function CreateProductPage() {
   // ═══════════════════════════════════════
   // SUBMIT
   // ═══════════════════════════════════════
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const [header, base64] = dataUrl.split(',');
+    const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  };
+
+  const uploadImageUrl = async (url: string, name: string): Promise<string> => {
+    // If it's already a remote URL (not base64), keep it as-is
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    // Convert base64 data URL to blob and upload
+    const blob = dataUrlToBlob(url);
+    return api.uploadImage(blob, name);
+  };
+
   const handleSubmit = async (saveAs: 'publish' | 'unpublish' | 'draft') => {
     if (!nom.trim()) { showToast('Le nom du produit est requis', 'error'); return; }
     setSaving(true);
     try {
+      // Upload images one by one first
       const images = [];
-      if (thumbnailUrl) images.push({ url: thumbnailUrl, isMain: true, order: 0 });
-      productImages.forEach((img, i) => images.push({ url: img.url, isMain: false, order: i + 1 }));
+      if (thumbnailUrl) {
+        const uploadedUrl = await uploadImageUrl(thumbnailUrl, 'thumbnail.jpg');
+        images.push({ url: uploadedUrl, isMain: true, order: 0 });
+      }
+      for (let i = 0; i < productImages.length; i++) {
+        const uploadedUrl = await uploadImageUrl(productImages[i].url, `image-${i}.jpg`);
+        images.push({ url: uploadedUrl, isMain: false, order: i + 1 });
+      }
 
-      const stocks = productVariants.filter((v) => v.prix || v.qty).map((v) => ({
-        variant: v.key, price: v.prix ? Number(v.prix) : 0,
-        qty: v.qty ? Number(v.qty) : 0, sku: v.sku || undefined,
-        image: v.image || undefined,
-      }));
+      const stocks = [];
+      for (const v of productVariants.filter((v) => v.prix || v.qty)) {
+        let variantImage = v.image || undefined;
+        if (variantImage && variantImage.startsWith('data:')) {
+          variantImage = await uploadImageUrl(variantImage, `variant-${v.key}.jpg`);
+        }
+        stocks.push({
+          variant: v.key, price: v.prix ? Number(v.prix) : 0,
+          qty: v.qty ? Number(v.qty) : 0, sku: v.sku || undefined,
+          image: variantImage,
+        });
+      }
 
       const priceTiers = paliers.filter((p) => p.minQty > 0 && p.prix > 0)
         .map((p) => ({ minQty: p.minQty, maxQty: p.maxQty || undefined, price: p.prix }));
