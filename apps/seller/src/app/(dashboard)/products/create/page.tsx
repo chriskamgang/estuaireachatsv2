@@ -165,39 +165,46 @@ export default function CreateProductPage() {
   // ═══════════════════════════════════════
   // IMAGE HANDLERS
   // ═══════════════════════════════════════
-  const addImageFiles = (files: FileList | File[]) => {
-    const fileArr = Array.from(files).filter((f) => f.type.startsWith('image/'));
-    if (fileArr.length === 0) return;
-    fileArr.forEach((file, i) => {
+  const compressImage = (file: File, maxWidth = 800, quality = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        setProductImages((prev) => [
-          ...prev,
-          { id: Date.now() + i + Math.random(), url: dataUrl, isMain: false },
-        ]);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxWidth) { h = (h * maxWidth) / w; w = maxWidth; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  const addImageFiles = async (files: FileList | File[]) => {
+    const fileArr = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (fileArr.length === 0) return;
+    for (let i = 0; i < fileArr.length; i++) {
+      const dataUrl = await compressImage(fileArr[i]);
+      setProductImages((prev) => [
+        ...prev,
+        { id: Date.now() + i + Math.random(), url: dataUrl, isMain: false },
+      ]);
+    }
     if (!aiDone && fileArr[0]) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const dataUrl = e.target?.result as string;
-        await analyzeWithAI(dataUrl.split(',')[1], fileArr[0].type);
-      };
-      reader.readAsDataURL(fileArr[0]);
+      const dataUrl = await compressImage(fileArr[0], 1024, 0.9);
+      await analyzeWithAI(dataUrl.split(',')[1], 'image/jpeg');
     }
   };
 
-  const handleThumbnail = (file: File) => {
+  const handleThumbnail = async (file: File) => {
     if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      setThumbnailUrl(dataUrl);
-      if (!aiDone) await analyzeWithAI(dataUrl.split(',')[1], file.type);
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await compressImage(file, 600, 0.8);
+    setThumbnailUrl(dataUrl);
+    if (!aiDone) await analyzeWithAI(dataUrl.split(',')[1], 'image/jpeg');
   };
 
   const removeImage = (id: number) => setProductImages((prev) => prev.filter((img) => img.id !== id));
@@ -294,14 +301,10 @@ export default function CreateProductPage() {
     setProductVariants((prev) => prev.map((v) => v.key === key ? { ...v, [field]: value } : v));
   };
 
-  const handleVariantImage = (key: string, file: File) => {
+  const handleVariantImage = async (key: string, file: File) => {
     if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      updateProductVariant(key, 'image', dataUrl);
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await compressImage(file, 400, 0.75);
+    updateProductVariant(key, 'image', dataUrl);
   };
 
   // Paliers
