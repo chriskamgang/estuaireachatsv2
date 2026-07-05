@@ -236,10 +236,10 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ===== TOP SECTION: 3-column like Alibaba ===== */}
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
 
           {/* LEFT COLUMN: Gallery + Supplier info below */}
-          <div className="w-[500px] shrink-0 space-y-4">
+          <div className="w-full lg:w-[500px] lg:shrink-0 space-y-4">
             {/* Image Gallery */}
             <div className="bg-white rounded-lg p-4 flex gap-3">
               {/* Thumbnails vertical */}
@@ -313,7 +313,7 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-5">
                 <div>
                   <span className="text-sm font-bold text-dark">{product.rating}/5</span>
-                  <span className="text-xs text-gray-3 ml-0.5">({product.reviewCount})</span>
+                  <span className="text-xs text-gray-3 ml-0.5">({product.reviewCount ?? 0})</span>
                   <p className="text-[11px] text-gray-3">Note boutique</p>
                 </div>
                 <div>
@@ -364,7 +364,7 @@ export default function ProductDetailPage() {
                         />
                       ))}
                     </div>
-                    <span className="text-sm text-gray-3">{product.reviewCount} avis</span>
+                    <span className="text-sm text-gray-3">{product.reviewCount ?? 0} avis</span>
                   </>
                 ) : (
                   <span className="text-sm text-gray-3">Pas encore d&apos;avis</span>
@@ -700,7 +700,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* RIGHT SIDEBAR (Sticky — like Alibaba) */}
-          <div className="w-[300px] shrink-0">
+          <div className="w-full lg:w-[300px] lg:shrink-0">
             <div className="bg-white rounded-lg p-5 sticky top-4 space-y-5">
               {/* Shipping */}
               {(() => {
@@ -849,17 +849,17 @@ export default function ProductDetailPage() {
 
         {/* ===== TAB NAVIGATION (sticky) ===== */}
         <div className="mt-6 sticky top-0 z-30 bg-white rounded-t-lg border-b border-gray-5">
-          <div className="flex items-center gap-0">
+          <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
             {[
               { key: 'attributes', label: 'Attributs' },
-              { key: 'reviews', label: `Avis (${product.reviewCount})` },
+              { key: 'reviews', label: `Avis (${product.reviewCount ?? 0})` },
               { key: 'description', label: 'Description du fournisseur' },
               { key: 'packing', label: 'Emballage & Livraison' },
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => scrollToSection(tab.key)}
-                className={`px-6 py-3.5 text-sm font-medium border-b-2 transition-colors ${
+                className={`px-4 md:px-6 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.key ? 'border-orange text-orange' : 'border-transparent text-gray-3 hover:text-dark'
                 }`}
               >
@@ -880,11 +880,11 @@ export default function ProductDetailPage() {
                   const left = fullAttributes[rowIdx * 2];
                   const right = fullAttributes[rowIdx * 2 + 1];
                   return (
-                    <div key={rowIdx} className={`grid grid-cols-2 divide-x divide-gray-5 ${rowIdx > 0 ? 'border-t border-gray-5' : ''}`}>
+                    <div key={rowIdx} className={`grid grid-cols-1 md:grid-cols-2 md:divide-x divide-gray-5 ${rowIdx > 0 ? 'border-t border-gray-5' : ''}`}>
                       {left && (
                         <div className="flex items-center">
-                          <span className="w-[160px] shrink-0 px-4 py-3 text-sm text-gray-3 bg-gray-6">{left.label}</span>
-                          <span className="px-4 py-3 text-sm text-dark">{left.value}</span>
+                          <span className="w-[120px] md:w-[160px] shrink-0 px-3 md:px-4 py-3 text-sm text-gray-3 bg-gray-6">{left.label}</span>
+                          <span className="px-3 md:px-4 py-3 text-sm text-dark">{left.value}</span>
                         </div>
                       )}
                       {right && (
@@ -910,7 +910,7 @@ export default function ProductDetailPage() {
                       <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-[#FF9800] text-[#FF9800]' : 'text-gray-4'}`} />
                     ))}
                   </div>
-                  <p className="text-sm text-gray-3 mt-1">{product.reviewCount} avis</p>
+                  <p className="text-sm text-gray-3 mt-1">{product.reviewCount ?? 0} avis</p>
                 </div>
                 <div className="flex-1 space-y-1.5">
                   {ratingDist.map((r) => (
@@ -969,7 +969,7 @@ export default function ProductDetailPage() {
                 })}
               </div>
               <button className="mt-4 text-sm font-medium text-orange hover:underline">
-                Voir tous les {product.reviewCount} avis →
+                Voir tous les {product.reviewCount ?? 0} avis →
               </button>
             </div>
 
