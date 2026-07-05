@@ -870,7 +870,7 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ===== TAB CONTENT (2-column: content + sticky sidebar) ===== */}
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1 min-w-0">
             {/* ATTRIBUTES */}
             <div ref={attributesRef} className="bg-white rounded-b-lg p-6">
@@ -1041,7 +1041,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Sticky sidebar for tab section */}
-          <div className="w-[300px] shrink-0">
+          <div className="w-full lg:w-[300px] lg:shrink-0">
             <div className="sticky top-[56px] bg-white rounded-lg p-5 space-y-4 mt-0">
               {isWholesale && tiers.length > 1 ? (
                 <div className="space-y-2">
