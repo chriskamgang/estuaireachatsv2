@@ -60,7 +60,7 @@ function FactoryCarousel({ images }: { images: string[] }) {
   if (images.length === 0) return null;
 
   return (
-    <div className="relative w-[240px] h-full rounded-lg overflow-hidden bg-gray-6 shrink-0">
+    <div className="relative w-full lg:w-[240px] h-full rounded-lg overflow-hidden bg-gray-6 lg:shrink-0">
       <img src={images[idx]} alt="Usine" className="w-full h-full object-cover" />
       {images.length > 1 && (
         <>
@@ -124,8 +124,8 @@ export default function VerifiedManufacturersPage() {
                     <div className="h-3 bg-gray-200 rounded w-1/4" />
                   </div>
                 </div>
-                <div className="flex gap-6">
-                  <div className="w-[200px] space-y-2">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="w-full lg:w-[200px] space-y-2">
                     <div className="h-3 bg-gray-200 rounded" />
                     <div className="h-3 bg-gray-200 rounded w-3/4" />
                   </div>
@@ -163,7 +163,7 @@ export default function VerifiedManufacturersPage() {
               return (
                 <div key={m.id} className="bg-white rounded-lg p-5">
                   {/* Top row: Logo + info + buttons */}
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                     <div className="flex items-start gap-3">
                       <img src={logo} alt={m.name} className="w-12 h-12 rounded-lg object-cover" />
                       <div>
@@ -184,7 +184,7 @@ export default function VerifiedManufacturersPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => toggleWishlist(m.id)}
                         className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-5 text-gray-3 hover:text-primary hover:border-primary transition-colors"
@@ -209,9 +209,9 @@ export default function VerifiedManufacturersPage() {
                   </div>
 
                   {/* Content: Info left + Products center + Factory image right */}
-                  <div className="flex gap-6">
+                  <div className="flex flex-col lg:flex-row gap-6">
                     {/* Left: Rating + Capabilities */}
-                    <div className="w-[200px] shrink-0">
+                    <div className="w-full lg:w-[200px] lg:shrink-0">
                       {m.rating != null && (
                         <div className="mb-4">
                           <p className="text-xs text-gray-3 font-medium mb-1">Evaluations et avis</p>

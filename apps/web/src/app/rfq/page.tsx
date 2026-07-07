@@ -220,7 +220,7 @@ function RfqContent() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-[#191919]">Quantite</label>
                   <input
@@ -252,7 +252,7 @@ function RfqContent() {
                 <button
                   onClick={() => setStep(2)}
                   disabled={!productDesc || !category || !quantity}
-                  className="rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-50"
+                  className="w-full sm:w-auto rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-50"
                 >
                   Continuer
                 </button>
@@ -269,7 +269,7 @@ function RfqContent() {
                 <label className="mb-1.5 block text-sm font-medium text-[#191919]">
                   Fourchette de budget (FCFA)
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="number"
                     value={budgetMin}
@@ -312,16 +312,16 @@ function RfqContent() {
                 />
               </div>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4">
                 <button
                   onClick={() => setStep(1)}
-                  className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="w-full sm:w-auto rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
                 >
                   Retour
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  className="rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23]"
+                  className="w-full sm:w-auto rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23]"
                 >
                   Continuer
                 </button>
@@ -367,17 +367,17 @@ function RfqContent() {
                 />
               </div>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4">
                 <button
                   onClick={() => setStep(2)}
-                  className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="w-full sm:w-auto rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={!contactName || !contactEmail || submitting}
-                  className="flex items-center gap-2 rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-50"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#E82328] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-50"
                 >
                   {submitting && (
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

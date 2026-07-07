@@ -92,7 +92,7 @@ function RatingStars({ rating, max = 5 }: { rating: number; max?: number }) {
 function RatingBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[14px] text-gray-2 w-[160px] shrink-0">{label}</span>
+      <span className="text-[14px] text-gray-2 w-full sm:w-[160px] sm:shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-gray-5 rounded-full overflow-hidden">
         <div
           className="h-full bg-orange rounded-full"
@@ -168,8 +168,8 @@ function ShopSkeleton() {
     <div className="min-h-screen bg-gray-6 animate-pulse">
       {/* Header skeleton */}
       <div className="bg-gradient-to-b from-[#FFF5EE] to-white">
-        <div className="max-w-[1440px] mx-auto px-6 py-8">
-          <div className="flex gap-8">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-6 py-6 lg:py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1 space-y-4">
               <div className="h-7 bg-gray-200 rounded w-2/3" />
               <div className="h-4 bg-gray-200 rounded w-1/2" />
@@ -193,14 +193,14 @@ function ShopSkeleton() {
                 </div>
               </div>
             </div>
-            <div className="w-[400px] shrink-0">
+            <div className="w-full lg:w-[400px] lg:shrink-0">
               <div className="aspect-[5/4] bg-gray-200 rounded-lg" />
             </div>
           </div>
         </div>
       </div>
       {/* Products skeleton */}
-      <div className="max-w-[1440px] mx-auto px-6 py-8">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-6 py-6 lg:py-8">
         <div className="h-6 bg-gray-200 rounded w-48 mb-6" />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: 10 }).map((_, i) => (
@@ -357,12 +357,12 @@ export default function ShopPage() {
       {/* SHOP HEADER */}
       {/* ================================================================== */}
       <div className="bg-gradient-to-b from-[#FFF5EE] to-white">
-        <div className="max-w-[1440px] mx-auto px-6 py-8">
-          <div className="flex gap-8">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-6 py-6 lg:py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
             {/* Left: Shop info */}
             <div className="flex-1 min-w-0">
               {/* Logo + Name + Buttons */}
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <img
                     src={logo}
@@ -409,7 +409,7 @@ export default function ShopPage() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-3 shrink-0 ml-4">
+                <div className="flex items-center gap-3 sm:shrink-0 sm:ml-4 flex-wrap">
                   <button
                     onClick={handleContactSeller}
                     className="flex items-center gap-2 px-5 py-2.5 border border-gray-4 text-dark rounded-full text-[14px] font-medium hover:border-dark transition-colors"
@@ -468,7 +468,7 @@ export default function ShopPage() {
               </div>
 
               {/* Stats row */}
-              <div className="flex items-start gap-10 mt-5 pt-5 border-t border-gray-5">
+              <div className="flex flex-wrap items-start gap-6 lg:gap-10 mt-5 pt-5 border-t border-gray-5">
                 {shop.responseRate && (
                   <div>
                     <p className="text-[13px] text-gray-3 flex items-center gap-1">
@@ -540,7 +540,7 @@ export default function ShopPage() {
 
             {/* Right: Factory gallery */}
             {factoryImages.length > 0 && (
-              <div className="w-[400px] shrink-0">
+              <div className="w-full lg:w-[400px] lg:shrink-0">
                 <FactoryGallery images={factoryImages} />
               </div>
             )}
@@ -551,8 +551,8 @@ export default function ShopPage() {
       {/* ================================================================== */}
       {/* TAB BAR */}
       {/* ================================================================== */}
-      <div className="max-w-[1440px] mx-auto px-6">
-        <div className="flex gap-6">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1 min-w-0">
             <div className="flex gap-0 border-b border-gray-5 bg-white sticky top-[64px] z-20">
               {TABS.map((tab) => (
@@ -575,7 +575,7 @@ export default function ShopPage() {
             {/* TAB: Produits */}
             {/* ============================================================ */}
             {activeTab === 'Produits' && (
-              <div className="bg-white p-8 mt-0">
+              <div className="bg-white p-4 lg:p-8 mt-0">
                 <h2 className="text-[20px] font-bold text-dark mb-6">
                   Produits de la boutique
                 </h2>
@@ -601,7 +601,7 @@ export default function ShopPage() {
             {/* TAB: Profil */}
             {/* ============================================================ */}
             {activeTab === 'Profil' && (
-              <div className="bg-white p-8 mt-0">
+              <div className="bg-white p-4 lg:p-8 mt-0">
                 <h2 className="text-[20px] font-bold text-dark mb-6">
                   Profil de la boutique
                 </h2>
@@ -621,7 +621,7 @@ export default function ShopPage() {
                 <h3 className="text-[16px] font-bold text-dark mb-4">
                   Informations generales
                 </h3>
-                <div className="grid grid-cols-2 gap-x-16 gap-y-5 mb-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-16 gap-y-5 mb-10">
                   {shop.name && (
                     <div>
                       <p className="text-[13px] text-gray-3">Nom</p>
@@ -674,7 +674,7 @@ export default function ShopPage() {
                       <h3 className="text-[16px] font-bold text-dark mb-4">
                         Details
                       </h3>
-                      <div className="grid grid-cols-2 gap-x-16 gap-y-5 mb-10">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-16 gap-y-5 mb-10">
                         {Object.entries(shop.overview).map(([key, value]) => (
                           <div key={key}>
                             <p className="text-[13px] text-gray-3 capitalize">
@@ -734,13 +734,13 @@ export default function ShopPage() {
             {/* TAB: Avis */}
             {/* ============================================================ */}
             {activeTab === 'Avis' && (
-              <div className="bg-white p-8 mt-0">
+              <div className="bg-white p-4 lg:p-8 mt-0">
                 <h2 className="text-[20px] font-bold text-dark mb-6">
                   Avis ({reviewCount})
                 </h2>
 
                 {/* Rating summary */}
-                <div className="flex gap-10 mb-8">
+                <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 mb-8">
                   <div>
                     <div className="flex items-end gap-1">
                       <span className="text-[48px] font-black text-dark leading-none">
@@ -794,7 +794,7 @@ export default function ShopPage() {
           {/* ============================================================== */}
           {/* RIGHT SIDEBAR — Contact supplier */}
           {/* ============================================================== */}
-          <div className="w-[220px] shrink-0">
+          <div className="hidden lg:block lg:w-[220px] lg:shrink-0">
             <div className="sticky top-[80px] bg-white rounded-lg border border-gray-5 p-5 mt-4">
               <h3 className="text-[15px] font-bold text-dark mb-3">
                 Contacter le fournisseur

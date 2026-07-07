@@ -120,9 +120,9 @@ export default function CategoryPage() {
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Left: Category Sidebar */}
-          <aside className="w-64 shrink-0">
+          <aside className="w-full lg:w-64 lg:shrink-0">
             <div className="bg-white rounded-lg p-4 sticky top-4">
               <h3 className="text-sm font-bold text-dark mb-3 flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-orange" />

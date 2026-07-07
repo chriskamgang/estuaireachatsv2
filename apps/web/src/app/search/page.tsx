@@ -132,10 +132,10 @@ function SearchPageContent() {
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Left Sidebar Filters */}
           {showFilters && (
-            <aside className="w-64 shrink-0">
+            <aside className="w-full lg:w-64 lg:shrink-0">
               <div className="bg-white rounded-lg p-4 sticky top-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-dark flex items-center gap-2">
@@ -265,7 +265,7 @@ function SearchPageContent() {
           {/* Main Content */}
           <div className="flex-1">
             {/* Sort + View toggle */}
-            <div className="bg-white rounded-lg p-3 mb-4 flex items-center justify-between">
+            <div className="bg-white rounded-lg p-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
@@ -286,8 +286,8 @@ function SearchPageContent() {
                 )}
               </div>
 
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-3 mr-2">Trier par :</span>
+              <div className="flex items-center gap-1 overflow-x-auto flex-wrap">
+                <span className="text-sm text-gray-3 mr-2 shrink-0">Trier par :</span>
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}

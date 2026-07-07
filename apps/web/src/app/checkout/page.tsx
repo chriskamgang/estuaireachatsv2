@@ -239,7 +239,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-[#F5F5F5]">
       <div className="mx-auto max-w-5xl px-4 py-6">
         {/* Step indicators */}
-        <div className="mb-8 flex items-center justify-center gap-2">
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
           {STEPS.map((s, idx) => (
             <div key={s.num} className="flex items-center">
               <div

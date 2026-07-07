@@ -337,7 +337,7 @@ function FactoryCarousel({ images }: { images: string[] }) {
   if (images.length === 0) return null;
 
   return (
-    <div className="relative w-[220px] h-full rounded-lg overflow-hidden bg-gray-6 shrink-0">
+    <div className="relative w-full lg:w-[220px] h-full rounded-lg overflow-hidden bg-gray-6 lg:shrink-0">
       <img src={images[idx]} alt="Usine" className="w-full h-full object-cover" />
       {images.length > 1 && (
         <>
@@ -446,9 +446,9 @@ function ManufacturerCard({ m }: { m: typeof MANUFACTURERS[0] & { ownerId?: stri
       </div>
 
       {/* Content: Info left + Products center + Factory right */}
-      <div className="flex gap-4 px-5 pb-5">
+      <div className="flex flex-col gap-4 px-5 pb-5 lg:flex-row">
         {/* Left: Rating + Capabilities */}
-        <div className="w-[200px] shrink-0">
+        <div className="w-full lg:w-[200px] lg:shrink-0">
           <div className="mb-3">
             <p className="text-[11px] text-gray-3 font-medium mb-1 uppercase tracking-wide">Evaluations et avis</p>
             <div className="flex items-center gap-1">
@@ -1166,7 +1166,7 @@ export default function HomePage() {
           {/* Accio Work promo section */}
           <div className="bg-gradient-to-b from-[#FFF8F0] to-white">
             <div className="max-w-[1440px] mx-auto px-6 py-12">
-              <div className="flex items-center gap-12">
+              <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
                 {/* Left: text */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-3">
@@ -1202,7 +1202,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Right: Agents preview card */}
-                <div className="w-[480px] shrink-0">
+                <div className="w-full lg:w-[480px] lg:shrink-0">
                   <div className="bg-white rounded-2xl shadow-lg border border-gray-5 p-5">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-[16px] font-bold text-dark">Agents</h3>
@@ -1250,7 +1250,7 @@ export default function HomePage() {
             </div>
 
             {/* Category tabs */}
-            <div className="flex items-center gap-6 mb-6">
+            <div className="flex items-center gap-3 mb-6 overflow-x-auto scrollbar-hide sm:gap-6">
               {AI_QUICK_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -1270,7 +1270,7 @@ export default function HomePage() {
             </div>
 
             {/* Cards grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {AI_QUICK_CARDS
                 .filter((card) => aiQuickTab === 'all' || card.catId === aiQuickTab)
                 .map((card, i) => (
@@ -1358,9 +1358,9 @@ export default function HomePage() {
 
           {/* 4-column intro section */}
           <div className="max-w-[1440px] mx-auto px-6 py-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 lg:flex-row">
               {/* Col 1: Source by category */}
-              <div className="w-[260px] shrink-0 bg-white rounded-xl p-5">
+              <div className="w-full lg:w-[260px] lg:shrink-0 bg-white rounded-xl p-5">
                 <h3 className="text-[16px] font-bold text-dark mb-3">Sourcer par categorie</h3>
                 <ul className="space-y-0">
                   {apiCategories.slice(0, 7).map((cat) => (
@@ -1446,7 +1446,7 @@ export default function HomePage() {
               </div>
 
               {/* Col 4: User profile card */}
-              <div className="w-[240px] shrink-0 bg-white rounded-xl p-5">
+              <div className="w-full lg:w-[240px] lg:shrink-0 bg-white rounded-xl p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-gray-6 flex items-center justify-center">
                     <span className="text-[18px]">👤</span>
@@ -1594,7 +1594,7 @@ export default function HomePage() {
           <div className="bg-white">
             <div className="max-w-[1440px] mx-auto px-6 pb-8">
               <h2 className="text-[28px] font-bold text-dark mb-5">Poles industriels mondiaux</h2>
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {GLOBAL_INDUSTRY_HUBS.map((hub, i) => (
                   <Link
                     key={i}
@@ -1640,7 +1640,7 @@ export default function HomePage() {
           <div className="bg-gray-6">
             <div className="max-w-[1440px] mx-auto px-6 py-8">
               <h2 className="text-[28px] font-bold text-dark mb-5">Produits les plus consultes</h2>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {TOP_VIEWED_CATEGORIES.map((cat, ci) => (
                   <Link
                     key={ci}
@@ -1685,7 +1685,7 @@ export default function HomePage() {
           {/* Product grid — Alibaba style: image with lens icon bottom-left, name, badges, FCFA price, MOQ, yrs + flag */}
           <div className="bg-white">
             <div className="max-w-[1440px] mx-auto px-6 py-8">
-              <div className="grid grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {MONDIAL_PRODUCTS.filter(
                   (p) => mondialCountry === 'all' || p.countryCode === mondialCountry
                 ).map((product) => (
