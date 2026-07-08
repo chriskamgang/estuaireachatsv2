@@ -419,7 +419,7 @@ function ManufacturerCard({ m }: { m: typeof MANUFACTURERS[0] & { ownerId?: stri
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-3">
+        <div className="hidden sm:flex items-center gap-2 shrink-0 ml-3">
           <button
             onClick={() => setLiked(!liked)}
             className={`w-9 h-9 flex items-center justify-center rounded-full border transition-colors ${liked ? 'border-primary text-primary' : 'border-gray-5 text-gray-3 hover:text-primary hover:border-primary'}`}
@@ -1039,7 +1039,7 @@ export default function HomePage() {
       {activeTab === 'ai' ? (
         <div className="bg-white">
           {/* Left sidebar icons */}
-          <div className="fixed left-0 top-1/2 -translate-y-1/2 z-40 flex flex-col bg-white rounded-r-lg shadow-lg overflow-hidden">
+          <div className="fixed left-0 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col bg-white rounded-r-lg shadow-lg overflow-hidden">
             <button className="flex items-center justify-center w-10 h-10 hover:bg-gray-6 transition-colors border-b border-gray-5">
               <LayoutPanelLeft className="w-5 h-5 text-gray-2" />
             </button>
@@ -1057,7 +1057,7 @@ export default function HomePage() {
           {/* Hero: AI prompt area + Chat */}
           <div className="max-w-[1440px] mx-auto px-6 pt-10 pb-6">
             {aiMessages.length === 0 && (
-              <h1 className="text-[28px] font-bold text-dark text-center mb-6">
+              <h1 className="text-[20px] sm:text-[28px] font-bold text-dark text-center mb-6">
                 Toutes les taches en une demande, sourcing intelligent avec l'IA
               </h1>
             )}
@@ -1174,7 +1174,7 @@ export default function HomePage() {
                     <span className="text-gray-4">|</span>
                     <span className="text-[16px] font-bold text-dark">Accio Work</span>
                   </div>
-                  <h2 className="text-[28px] font-bold text-dark leading-tight mb-3">
+                  <h2 className="text-[20px] sm:text-[28px] font-bold text-dark leading-tight mb-3">
                     Allez au-dela de la recherche — laissez{' '}
                     <span className="text-orange">Accio Work</span> gerer votre workflow de sourcing.
                   </h2>
@@ -1211,7 +1211,7 @@ export default function HomePage() {
                         <span>Generes par IA</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                       {[
                         { name: 'Accio', desc: 'Assistant sourcing general...', color: 'bg-white', initials: 'A', textColor: 'text-dark' },
                         { name: 'CEO', desc: 'Strategie & decisions business', color: 'bg-green/10', initials: null, avatar: true },
@@ -1302,10 +1302,10 @@ export default function HomePage() {
           {/* "Connect with 34K+" inline text (white bg, like Alibaba) */}
           <div className="bg-white pb-4 -mt-2">
             <div className="max-w-[1440px] mx-auto px-6 text-center">
-              <h2 className="text-[22px] font-bold text-dark">
+              <h2 className="text-[18px] sm:text-[22px] font-bold text-dark">
                 Connectez-vous avec 34K+ <span className="bg-gradient-to-r from-[#E82328] to-[#4A90D9] bg-clip-text text-transparent">V</span>erified fabricants
               </h2>
-              <div className="flex items-center justify-center gap-6 mt-2 text-[14px] text-gray-2">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-2 text-[14px] text-gray-2">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-gray-3" />
                   5K+ industries couvertes
@@ -1328,7 +1328,7 @@ export default function HomePage() {
               <h2 className="text-[15px] font-bold text-dark">
                 Bienvenue sur EstuaireAchats
               </h2>
-              <div className="flex items-center gap-0 text-[13px]">
+              <div className="hidden sm:flex items-center gap-0 text-[13px]">
                 <Link
                   href="/rfq"
                   className="flex items-center gap-1.5 px-4 py-1.5 text-gray-1 hover:text-orange transition-colors"

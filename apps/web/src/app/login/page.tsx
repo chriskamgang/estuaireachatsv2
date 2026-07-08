@@ -31,17 +31,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F5F5F5] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#F5F5F5] px-3 sm:px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <Link href="/" className="text-2xl font-bold text-[#E82328]">
+          <Link href="/" className="text-xl sm:text-2xl font-bold text-[#E82328]">
             Estuaire<span className="text-[#4A90D9]">Achats</span>
           </Link>
         </div>
 
-        <div className="rounded-lg bg-white p-8 shadow-sm">
-          <h1 className="mb-6 text-center text-2xl font-bold text-[#191919]">Connexion</h1>
+        <div className="rounded-lg bg-white p-5 sm:p-8 shadow-sm">
+          <h1 className="mb-6 text-center text-xl sm:text-2xl font-bold text-[#191919]">Connexion</h1>
 
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-[#E82328]">

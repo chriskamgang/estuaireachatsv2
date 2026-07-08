@@ -20,8 +20,8 @@ export default function WishlistPage() {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-dark">Mes favoris</h1>
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
+        <h1 className="mb-6 text-lg sm:text-xl font-bold text-dark">Mes favoris</h1>
         <div className="flex justify-center py-16">
           <span className="h-8 w-8 animate-spin rounded-full border-2 border-orange border-t-transparent" />
         </div>
@@ -31,8 +31,8 @@ export default function WishlistPage() {
 
   if (displayItems.length === 0) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-dark">Mes favoris</h1>
+      <div className="rounded-lg bg-white p-3 sm:p-6 shadow-sm">
+        <h1 className="mb-6 text-lg sm:text-xl font-bold text-dark">Mes favoris</h1>
         <div className="flex flex-col items-center py-16">
           <Heart size={48} className="mb-4 text-gray-4" />
           <p className="mb-2 text-lg font-medium text-gray-2">Vous n&apos;avez aucun favori</p>
@@ -57,7 +57,7 @@ export default function WishlistPage() {
         <span className="text-sm text-gray-3">{displayItems.length} article{displayItems.length > 1 ? 's' : ''}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {displayItems.map((item) => (
           <div
             key={item.id}

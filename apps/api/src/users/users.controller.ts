@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -50,6 +51,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Notification de nouveaux produits pour la derniere recherche' })
   getSearchNotification(@CurrentUser('id') userId: string) {
     return this.usersService.getSearchNotification(userId);
+  }
+
+  @Delete('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Supprimer son compte et toutes ses donnees' })
+  deleteMe(@CurrentUser('id') userId: string) {
+    return this.usersService.deleteAccount(userId);
   }
 
   @Patch('me')

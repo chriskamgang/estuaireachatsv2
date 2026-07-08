@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, ArrowLeft } from 'lucide-react';
 import { cn, timeAgo } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
@@ -141,8 +141,11 @@ export default function MessagesPage() {
       <h1 className="border-b border-gray-5 px-4 sm:px-6 py-3 sm:py-4 text-lg sm:text-xl font-bold text-dark">Messagerie</h1>
 
       <div className="flex flex-col md:flex-row" style={{ minHeight: '400px' }}>
-        {/* Conversation list */}
-        <div className="w-full md:w-[300px] shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-gray-5 max-h-[200px] md:max-h-[520px]">
+        {/* Conversation list — hidden on mobile when a conversation is active */}
+        <div className={cn(
+          'w-full md:w-[300px] shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-gray-5 md:max-h-[520px]',
+          activeConvId ? 'hidden md:block' : 'block'
+        )}>
           {conversations.map((conv) => (
             <button
               key={conv.id}
@@ -182,6 +185,13 @@ export default function MessagesPage() {
           <div className="flex min-w-0 flex-1 flex-col min-h-[300px] md:min-h-0">
             {/* Thread header */}
             <div className="flex items-center gap-3 border-b border-gray-5 px-3 sm:px-5 py-3">
+              {/* Back button — mobile only */}
+              <button
+                onClick={() => setActiveConvId(null)}
+                className="flex md:hidden h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-3 hover:bg-gray-6 hover:text-dark"
+              >
+                <ArrowLeft size={18} />
+              </button>
               <img
                 src={getAvatar(activeConv)}
                 alt=""

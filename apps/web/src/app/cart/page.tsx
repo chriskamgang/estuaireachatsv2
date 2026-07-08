@@ -117,7 +117,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] pb-28">
       <div className="mx-auto max-w-5xl px-4 py-6">
-        <h1 className="mb-6 text-2xl font-bold text-[#191919]">Panier</h1>
+        <h1 className="mb-6 text-xl sm:text-2xl font-bold text-[#191919]">Panier</h1>
 
         {/* Header row */}
         <div className="mb-2 hidden items-center rounded-t-lg bg-white px-4 py-3 text-sm text-gray-500 shadow-sm md:flex">
@@ -157,9 +157,9 @@ export default function CartPage() {
               {group.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col gap-4 border-b border-gray-50 px-4 py-4 last:border-b-0 md:flex-row md:items-center"
+                  className="flex flex-col gap-3 border-b border-gray-50 px-3 sm:px-4 py-4 last:border-b-0 md:flex-row md:items-center"
                 >
-                  <div className="w-10 shrink-0">
+                  <div className="w-10 shrink-0 hidden md:block">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(item.id)}
@@ -168,6 +168,13 @@ export default function CartPage() {
                     />
                   </div>
                   <div className="flex flex-1 items-center gap-3">
+                    {/* Checkbox visible only on mobile, inside the product row */}
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleItem(item.id)}
+                      className="h-4 w-4 shrink-0 accent-[#E82328] md:hidden"
+                    />
                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
                       {item.productImage && item.productImage !== '/placeholder.png' ? (
                         <Image
@@ -198,40 +205,52 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="w-full md:w-32 text-left md:text-center text-sm font-medium text-[#191919]">
-                    {formatPrice(item.price)}
+                  {/* Mobile row 1: unit price + quantity */}
+                  <div className="flex items-center justify-between gap-3 md:w-32 md:block md:text-center">
+                    <span className="text-xs text-gray-400 md:hidden">Prix unit.</span>
+                    <span className="text-sm font-medium text-[#191919]">{formatPrice(item.price)}</span>
                   </div>
 
                   {/* Quantity selector */}
-                  <div className="flex w-full md:w-32 items-center justify-start md:justify-center">
+                  <div className="flex items-center justify-between gap-3 md:w-32 md:justify-center">
+                    <span className="text-xs text-gray-400 md:hidden">Qte</span>
+                    <div className="flex items-center">
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.id, Math.max(item.minQty, item.quantity - 1))
+                        }
+                        disabled={item.quantity <= item.minQty}
+                        className="flex h-8 w-8 items-center justify-center rounded-l border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-40"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="flex h-8 w-10 items-center justify-center border-y border-gray-300 text-sm font-medium text-[#191919]">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.id, Math.min(item.maxStock, item.quantity + 1))
+                        }
+                        disabled={item.quantity >= item.maxStock}
+                        className="flex h-8 w-8 items-center justify-center rounded-r border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-40"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mobile row 3: subtotal + delete */}
+                  <div className="flex items-center justify-between gap-3 md:w-32 md:block md:text-center">
+                    <span className="text-sm font-bold text-[#E82328]">{formatPrice(item.price * item.quantity)}</span>
                     <button
-                      onClick={() =>
-                        updateQuantity(item.id, Math.max(item.minQty, item.quantity - 1))
-                      }
-                      disabled={item.quantity <= item.minQty}
-                      className="flex h-8 w-8 items-center justify-center rounded-l border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-40"
+                      onClick={() => removeItem(item.id)}
+                      className="rounded p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-[#E82328] md:hidden"
                     >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="flex h-8 w-10 items-center justify-center border-y border-gray-300 text-sm font-medium text-[#191919]">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() =>
-                        updateQuantity(item.id, Math.min(item.maxStock, item.quantity + 1))
-                      }
-                      disabled={item.quantity >= item.maxStock}
-                      className="flex h-8 w-8 items-center justify-center rounded-r border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-40"
-                    >
-                      <Plus className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
 
-                  <div className="w-full md:w-32 text-left md:text-center text-sm font-bold text-[#E82328]">
-                    {formatPrice(item.price * item.quantity)}
-                  </div>
-
-                  <div className="flex w-full md:w-16 justify-start md:justify-center">
+                  <div className="hidden md:flex md:w-16 md:justify-center">
                     <button
                       onClick={() => removeItem(item.id)}
                       className="rounded p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-[#E82328]"
