@@ -164,7 +164,7 @@ export class UsersService {
     // Supprimer les donnees liees puis le compte
     await this.prisma.$transaction([
       this.prisma.address.deleteMany({ where: { userId } }),
-      this.prisma.wishlistItem.deleteMany({ where: { userId } }),
+      this.prisma.wishlist.deleteMany({ where: { userId } }),
       this.prisma.notification.deleteMany({ where: { userId } }),
       this.prisma.userSearch.deleteMany({ where: { userId } }),
       this.prisma.user.delete({ where: { id: userId } }),
