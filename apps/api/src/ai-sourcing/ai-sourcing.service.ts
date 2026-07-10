@@ -16,6 +16,39 @@ export class AiSourcingService {
     private httpService: HttpService,
   ) {}
 
+  private async callClaude(systemPrompt: string, userMessage: string): Promise<{ text?: string }> {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return {};
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 500,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!res.ok) {
+        this.logger.warn(`Claude API error: ${res.status}`);
+        return {};
+      }
+
+      const data = await res.json();
+      return { text: data?.content?.[0]?.text || '' };
+    } catch (err) {
+      this.logger.warn(`Claude API exception: ${err?.message}`);
+      return {};
+    }
+  }
+
   private getGeminiKeys(): string[] {
     const keys: string[] = [];
     const multiKeys = process.env.GEMINI_API_KEYS;
@@ -32,7 +65,7 @@ export class AiSourcingService {
   private async callGeminiWithRotation(body: object): Promise<{ data?: any; error?: string }> {
     const keys = this.getGeminiKeys();
     if (keys.length === 0) {
-      return { error: 'GEMINI_API_KEY non configuree' };
+      return { error: 'Aucune cle API IA configuree' };
     }
 
     for (const key of keys) {
@@ -58,7 +91,7 @@ export class AiSourcingService {
       return { error: errData?.error?.message || `Erreur Gemini (${res.status})` };
     }
 
-    return { error: 'Toutes les cles API Gemini ont atteint leur quota' };
+    return { error: 'Toutes les cles API ont atteint leur quota' };
   }
 
   /**
@@ -76,18 +109,7 @@ export class AiSourcingService {
   }) {
     const { query } = dto;
 
-    try {
-      if (this.getGeminiKeys().length === 0) {
-        this.logger.warn('GEMINI_API_KEYS non configuree, fallback vers recherche basique');
-        return this.search(dto);
-      }
-
-      const geminiResult = await this.callGeminiWithRotation({
-        contents: [{ role: 'user', parts: [{ text: query }] }],
-        systemInstruction: {
-          parts: [
-            {
-              text: `Tu es un assistant de sourcing intelligent pour EstuaireAchats, une plateforme e-commerce B2B au Cameroun (comme Alibaba).
+    const AI_SYSTEM_PROMPT = `Tu es un assistant de sourcing intelligent pour EstuaireAchats, une plateforme e-commerce B2B au Cameroun (comme Alibaba).
 
 Analyse la demande de l'utilisateur et determine son INTENTION :
 1. "search" — L'utilisateur cherche un produit ou fournisseur specifique (ex: "smartphone Samsung", "ciment Portland")
@@ -116,23 +138,36 @@ Si intention = "help":
 }
 
 Exemples de "help": "aide moi a concevoir un produit", "comment trouver un bon fournisseur", "je veux lancer un business", "quels sont les produits tendance".
-Exemples de "search": "ciment 50kg", "telephone Samsung", "fournisseur de vetements".`,
-            },
-          ],
-        },
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 500,
-        },
-      });
+Exemples de "search": "ciment 50kg", "telephone Samsung", "fournisseur de vetements".`;
 
-      if (geminiResult.error) {
-        this.logger.error(`Gemini: ${geminiResult.error}`);
-        return this.search(dto);
+    try {
+      let rawText = '';
+
+      // 1. Essayer Gemini d'abord (gratuit)
+      if (this.getGeminiKeys().length > 0) {
+        const geminiResult = await this.callGeminiWithRotation({
+          contents: [{ role: 'user', parts: [{ text: query }] }],
+          systemInstruction: { parts: [{ text: AI_SYSTEM_PROMPT }] },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
+        });
+
+        if (!geminiResult.error && geminiResult.data) {
+          rawText = geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        } else {
+          this.logger.warn(`Gemini indisponible, basculement vers Claude: ${geminiResult.error}`);
+        }
       }
 
-      const rawText =
-        geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      // 2. Fallback Claude quand Gemini est epuise
+      if (!rawText) {
+        const claudeResult = await this.callClaude(AI_SYSTEM_PROMPT, query);
+        if (claudeResult.text) {
+          rawText = claudeResult.text;
+        } else {
+          this.logger.warn('Aucune IA disponible, fallback vers recherche basique');
+          return this.search(dto);
+        }
+      }
 
       // Parser le JSON retourne par Gemini
       let parsed: {

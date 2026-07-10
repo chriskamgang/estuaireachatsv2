@@ -2,7 +2,43 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// Recuperer la cle API Gemini depuis les settings ou l'env
+async function callClaude(systemPrompt: string, imageBase64: string, mimeType: string): Promise<{ text?: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return {};
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
+            { type: 'text', text: systemPrompt },
+          ],
+        }],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('Claude API error:', res.status);
+      return {};
+    }
+
+    const data = await res.json();
+    return { text: data?.content?.[0]?.text || '' };
+  } catch {
+    return {};
+  }
+}
+
 async function getGeminiKey(): Promise<string> {
   try {
     const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
@@ -103,60 +139,62 @@ function jsonCors(data: unknown, status = 200) {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = await getGeminiKey();
-    if (!apiKey) {
-      return jsonCors(
-        { error: 'Cle API Gemini non configuree. Configurez-la dans Admin > Parametres > IA.' },
-        500
-      );
-    }
-
     const { image, mimeType } = await req.json();
 
     if (!image) {
       return jsonCors({ error: 'Image requise' }, 400);
     }
 
-    // Appel API Gemini avec image en base64
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: PRODUCT_ANALYZE_PROMPT },
-              { inlineData: { mimeType: mimeType || 'image/jpeg', data: image } },
-            ],
-          }],
-        }),
-      }
-    );
+    let text = '';
+    let geminiError = '';
 
-    if (!geminiRes.ok) {
-      const errData = await geminiRes.json().catch(() => ({}));
-      const errMsg = errData?.error?.message || `Erreur Gemini API (${geminiRes.status})`;
-      return jsonCors({ error: errMsg }, 500);
+    // 1. Essayer Gemini d'abord (gratuit)
+    const apiKey = await getGeminiKey();
+    if (apiKey) {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: PRODUCT_ANALYZE_PROMPT },
+                { inlineData: { mimeType: mimeType || 'image/jpeg', data: image } },
+              ],
+            }],
+          }),
+        }
+      );
+
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json();
+        text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else {
+        const errData = await geminiRes.json().catch(() => ({}));
+        geminiError = errData?.error?.message || `Erreur Gemini (${geminiRes.status})`;
+        console.log('Gemini indisponible, basculement vers Claude:', geminiError);
+      }
     }
 
-    const geminiData = await geminiRes.json();
-    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // 2. Fallback Claude quand Gemini est epuise
+    if (!text) {
+      const claudeResult = await callClaude(PRODUCT_ANALYZE_PROMPT, image, mimeType || 'image/jpeg');
+      if (claudeResult.text) {
+        text = claudeResult.text;
+      } else {
+        return jsonCors({ error: geminiError || 'Aucune IA disponible' }, 500);
+      }
+    }
 
-    // Parse JSON from response
     let productData;
     try {
-      // Try to extract JSON if wrapped in code blocks
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       productData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     } catch {
-      return jsonCors(
-        { error: 'Erreur d\'analyse de la reponse IA', raw: text },
-        500
-      );
+      return jsonCors({ error: 'Erreur d\'analyse de la reponse IA', raw: text }, 500);
     }
 
-    // Search Unsplash for similar images
     const unsplashImages = await searchUnsplash(
       productData.unsplashQuery || productData.nom,
       5

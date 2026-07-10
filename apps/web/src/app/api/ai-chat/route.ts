@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// Recuperer la cle API Gemini depuis les settings ou l'env
 async function getGeminiKey(): Promise<string> {
   try {
     const res = await fetch(`${API_URL}/settings/ai/key`, { cache: 'no-store' });
@@ -12,6 +11,43 @@ async function getGeminiKey(): Promise<string> {
     }
   } catch {}
   return process.env.GEMINI_API_KEY || '';
+}
+
+async function callClaude(systemPrompt: string, messages: { role: string; content: string }[]): Promise<{ text?: string; error?: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return {};
+
+  try {
+    const claudeMessages = messages.map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+      content: m.content,
+    }));
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: claudeMessages,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('Claude API error:', res.status);
+      return {};
+    }
+
+    const data = await res.json();
+    return { text: data?.content?.[0]?.text || '' };
+  } catch {
+    return {};
+  }
 }
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA de sourcing d'EstuaireAchats, une plateforme e-commerce B2B panafricaine (clone d'Alibaba).
@@ -51,43 +87,45 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
+    // 1. Essayer Gemini d'abord (gratuit)
     const apiKey = await getGeminiKey();
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Cle API Gemini non configuree. Configurez-la dans Admin > Parametres > IA.' },
-        { status: 500 }
+    if (apiKey) {
+      const geminiContents = messages.map((m: { role: string; content: string }) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
+
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: geminiContents,
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          }),
+        }
       );
-    }
 
-    // Convertir les messages au format Gemini (role "user" ou "model")
-    const geminiContents = messages.map((m: { role: string; content: string }) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
-
-    // Appel API Gemini via fetch
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: geminiContents,
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        }),
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json();
+        const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return NextResponse.json({ response: text });
       }
-    );
 
-    if (!geminiRes.ok) {
-      const errData = await geminiRes.json().catch(() => ({}));
-      const errMsg = errData?.error?.message || `Erreur Gemini API (${geminiRes.status})`;
-      return NextResponse.json({ error: errMsg }, { status: 500 });
+      console.log('Gemini indisponible, basculement vers Claude');
     }
 
-    const geminiData = await geminiRes.json();
-    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // 2. Fallback Claude quand Gemini est epuise
+    const claudeResult = await callClaude(SYSTEM_PROMPT, messages);
+    if (claudeResult.text) {
+      return NextResponse.json({ response: claudeResult.text });
+    }
 
-    return NextResponse.json({ response: text });
+    return NextResponse.json(
+      { error: 'Aucune IA disponible actuellement.' },
+      { status: 500 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     return NextResponse.json({ error: message }, { status: 500 });

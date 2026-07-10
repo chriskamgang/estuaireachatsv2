@@ -55,15 +55,22 @@ export default function CreateProductPage() {
   // ─── Data from API ───
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   useEffect(() => {
-    api.get<{ data: { id: string; name: string; children?: { id: string; name: string }[] }[] }>('/categories')
-      .then((res) => {
+    const loadCategories = async (attempt = 0) => {
+      try {
+        setCategoriesLoading(true);
+        const res = await api.get<{ data: { id: string; name: string; children?: { id: string; name: string }[] }[] }>('/categories');
         setCategories(res.data.map((c) => ({
           value: c.id, label: c.name,
           children: c.children?.map((sc) => ({ value: sc.id, label: sc.name })) || [],
         })));
-      }).catch(() => {});
+      } catch {
+        if (attempt < 2) setTimeout(() => loadCategories(attempt + 1), 1500);
+      } finally { setCategoriesLoading(false); }
+    };
+    loadCategories();
     api.get<{ data: { id: string; name: string }[] }>('/brands')
       .then((res) => setBrands(res.data.map((b) => ({ value: b.id, label: b.name }))))
       .catch(() => {});
@@ -335,6 +342,7 @@ export default function CreateProductPage() {
   };
 
   const handleSubmit = async (saveAs: 'publish' | 'unpublish' | 'draft') => {
+    if (saving) return;
     if (!nom.trim()) { showToast('Le nom du produit est requis', 'error'); return; }
     setSaving(true);
     try {
@@ -379,7 +387,7 @@ export default function CreateProductPage() {
         origin: origin || undefined,
         estShippingDays: estShippingDays ? Number(estShippingDays) : undefined,
         videoLink: videoLink || undefined,
-        pdfSpec: pdfSpec || undefined,
+
         isFeatured,
         isPublished: saveAs === 'publish',
         status: saveAs === 'draft' ? 'DRAFT' : 'ACTIVE',
@@ -458,8 +466,8 @@ export default function CreateProductPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Categorie principale *</label>
-                  <select value={categorie} onChange={(e) => { setCategorie(e.target.value); setSousCategorie(''); }} className={inputClass}>
-                    <option value="">Selectionner une categorie</option>
+                  <select value={categorie} onChange={(e) => { setCategorie(e.target.value); setSousCategorie(''); }} className={inputClass} disabled={categoriesLoading}>
+                    <option value="">{categoriesLoading ? 'Chargement...' : 'Selectionner une categorie'}</option>
                     {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </div>

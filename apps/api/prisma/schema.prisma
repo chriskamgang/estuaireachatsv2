@@ -921,6 +921,17 @@ model Carrier {
   id              String  @id @default(cuid())
   name            String
   logo            String?
+  phone           String?
+  type            String  @default("local") // "international_cargo" | "local_agency"
+  transportMode   String? // "aerien", "maritime", "bus", "camion"
+  origins         Json?   // ["Chine", "Turquie", ...]
+  destinations    Json?   // ["Cameroun", "Nigeria", ...]
+  zones           Json?   // for local: ["Bafang", "Dschang", ...]
+  rates           Json?   // tarifs detailles en JSON
+  restrictions    Json?   // articles interdits
+  deliveryMinDays Int?
+  deliveryMaxDays Int?
+  insurance       String? // ex: "10% de la valeur declaree"
   costMultiplyQty Boolean @default(false)
   baseCost        Float   @default(0)
   isActive        Boolean @default(true)

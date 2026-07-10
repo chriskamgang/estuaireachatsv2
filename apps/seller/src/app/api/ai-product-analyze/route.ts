@@ -2,9 +2,47 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+async function callClaude(systemPrompt: string, imageBase64: string, mimeType: string): Promise<{ text?: string; error?: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { error: null as any }; // fallback to Gemini
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
+            { type: 'text', text: systemPrompt },
+          ],
+        }],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('Claude API error:', err);
+      return { error: null as any }; // fallback to Gemini
+    }
+
+    const data = await res.json();
+    const text = data?.content?.[0]?.text || '';
+    return { text };
+  } catch {
+    return { error: null as any }; // fallback to Gemini
+  }
+}
+
 function getGeminiKeys(): string[] {
   const keys: string[] = [];
-  // Support multiple keys via GEMINI_API_KEYS (comma-separated) or single GEMINI_API_KEY
   const multiKeys = process.env.GEMINI_API_KEYS;
   if (multiKeys) {
     keys.push(...multiKeys.split(',').map(k => k.trim()).filter(Boolean));
@@ -19,7 +57,7 @@ function getGeminiKeys(): string[] {
 async function callGeminiWithRotation(body: object): Promise<{ data?: any; error?: string }> {
   const keys = getGeminiKeys();
   if (keys.length === 0) {
-    return { error: 'Cle API Gemini non configuree. Configurez GEMINI_API_KEYS dans les variables d\'environnement.' };
+    return { error: 'Aucune cle API IA configuree (ni Claude ni Gemini).' };
   }
 
   for (const key of keys) {
@@ -37,18 +75,16 @@ async function callGeminiWithRotation(body: object): Promise<{ data?: any; error
       return { data };
     }
 
-    // 429 = quota exceeded, try next key
     if (res.status === 429) {
       console.log(`Gemini key ...${key.slice(-6)} quota exceeded, trying next key`);
       continue;
     }
 
-    // Other error, return it
     const errData = await res.json().catch(() => ({}));
     return { error: errData?.error?.message || `Erreur Gemini API (${res.status})` };
   }
 
-  return { error: 'Toutes les cles API Gemini ont atteint leur quota. Reessayez demain ou ajoutez de nouvelles cles.' };
+  return { error: 'Toutes les cles API ont atteint leur quota.' };
 }
 
 async function getUnsplashKey(): Promise<string> {
@@ -132,6 +168,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Image requise' }, { status: 400 });
     }
 
+    let text = '';
+
+    // 1. Essayer Gemini d'abord (gratuit)
     const geminiResult = await callGeminiWithRotation({
       contents: [{
         parts: [
@@ -141,11 +180,18 @@ export async function POST(req: NextRequest) {
       }],
     });
 
-    if (geminiResult.error) {
-      return NextResponse.json({ error: geminiResult.error }, { status: 500 });
+    if (!geminiResult.error && geminiResult.data) {
+      text = geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } else {
+      // 2. Fallback Claude quand Gemini est epuise
+      console.log('Gemini indisponible, basculement vers Claude:', geminiResult.error);
+      const claudeResult = await callClaude(PRODUCT_ANALYZE_PROMPT, image, mimeType || 'image/jpeg');
+      if (claudeResult.text) {
+        text = claudeResult.text;
+      } else {
+        return NextResponse.json({ error: geminiResult.error || 'Aucune IA disponible' }, { status: 500 });
+      }
     }
-
-    const text = geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     let productData;
     try {

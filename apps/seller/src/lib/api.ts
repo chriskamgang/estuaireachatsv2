@@ -20,6 +20,27 @@ class ApiClient {
     return headers;
   }
 
+  private translateError(msg: string): string {
+    if (!msg) return 'Erreur inconnue';
+    // NestJS validation pipe errors
+    if (msg.includes('should not exist')) {
+      const prop = msg.match(/property (\w+)/)?.[1];
+      return prop ? `Le champ "${prop}" n'est pas autorise` : 'Un champ envoye n\'est pas autorise';
+    }
+    if (msg.includes('must be a string')) return 'Un champ doit etre du texte';
+    if (msg.includes('must be a number')) return 'Un champ doit etre un nombre';
+    if (msg.includes('must not be empty')) return 'Un champ obligatoire est vide';
+    if (msg.includes('should not be empty')) return 'Un champ obligatoire est vide';
+    if (msg.includes('must be an array')) return 'Format de donnees invalide';
+    if (msg.includes('Forbidden')) return 'Acces interdit';
+    if (msg.includes('Unauthorized')) return 'Non autorise — veuillez vous reconnecter';
+    if (msg.includes('Not Found')) return 'Ressource introuvable';
+    if (msg.includes('already exists')) return 'Ce produit existe deja';
+    if (msg.includes('Bad Request')) return 'Requete invalide — verifiez les champs';
+    // If array of messages (NestJS validation)
+    return msg;
+  }
+
   private async handleResponse<T>(res: Response, url: string): Promise<T> {
     if (res.status === 401 && typeof window !== 'undefined' && !url.includes('/auth/login') && !url.includes('/auth/register')) {
       localStorage.removeItem('seller_accessToken');
@@ -29,7 +50,8 @@ class ApiClient {
     }
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: 'Erreur reseau' }));
-      throw new Error(error.message || `Erreur ${res.status}`);
+      const rawMsg = Array.isArray(error.message) ? error.message[0] : (error.message || `Erreur ${res.status}`);
+      throw new Error(this.translateError(rawMsg));
     }
     return res.json();
   }
