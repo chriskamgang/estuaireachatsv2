@@ -59,6 +59,7 @@ export default function EditProductPage() {
   const [suggestedImages, setSuggestedImages] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
 
+  const [prixUnitaire, setPrixUnitaire] = useState('');
   const [moq, setMoq] = useState('1');
   const [stock, setStock] = useState('');
   const [paliers, setPaliers] = useState<PrixPalier[]>([]);
@@ -115,6 +116,7 @@ export default function EditProductPage() {
         if (p.category?.id) setCategorie(p.category.id);
         if (p.brand?.name) setMarque(p.brand.name);
         if (p.tags?.length) setTags(p.tags.join(', '));
+        if (p.price) setPrixUnitaire(String(p.price));
         setMoq(String(p.minOrderQty));
         if (p.unit) setUnite(p.unit);
 
@@ -232,6 +234,7 @@ export default function EditProductPage() {
         description,
         slug: seoSlug || undefined,
         unit: unite,
+        price: prixUnitaire ? Number(prixUnitaire) : undefined,
         minOrderQty: moq ? Number(moq) : 1,
         tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
         status: asDraft ? 'DRAFT' : 'ACTIVE',
@@ -452,6 +455,11 @@ export default function EditProductPage() {
 
           {activeTab === 'prix' && (
             <div className="space-y-5 max-w-2xl">
+              <div>
+                <label className={labelClass}>Prix unitaire (FCFA) *</label>
+                <input type="number" value={prixUnitaire} onChange={(e) => setPrixUnitaire(e.target.value)} placeholder="Ex: 1500" min={0} className={inputClass} />
+                <p className="text-xs text-gray-400 mt-1">Prix de vente a l&apos;unite affiche aux acheteurs</p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Quantite minimum</label>
