@@ -32,7 +32,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   fetchWishlist: async () => {
     try {
       set({ isLoading: true });
-      const res = await api.get<{ data: WishlistItem[] }>('/wishlist');
+      const res = await api.get<{ data: WishlistItem[] }>('/wishlists');
       const items = res.data || [];
       set({ items, count: items.length, isLoading: false });
     } catch {
@@ -43,13 +43,13 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   toggle: async (productId) => {
     const inList = get().isInWishlist(productId);
     if (inList) {
-      await api.delete(`/wishlist/${productId}`);
+      await api.delete(`/wishlists/remove/${productId}`);
       set((state) => {
         const items = state.items.filter((i) => i.productId !== productId);
         return { items, count: items.length };
       });
     } else {
-      await api.post('/wishlist', { productId });
+      await api.post('/wishlists/add', { productId });
       await get().fetchWishlist();
     }
   },

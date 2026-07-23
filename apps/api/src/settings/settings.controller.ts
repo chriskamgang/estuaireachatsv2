@@ -18,6 +18,7 @@ import {
   UpdateKPaySettingsDto,
   UpdateGfsSettingsDto,
   UpdatePaypalSettingsDto,
+  UpdateElgioPaySettingsDto,
 } from './dto/update-payment-settings.dto';
 
 @ApiTags('Settings')
@@ -106,6 +107,27 @@ export class SettingsController {
   async updatePaypal(@Body() dto: UpdatePaypalSettingsDto) {
     const data = await this.settingsService.updatePaypalSettings(dto);
     return { result: true, message: 'Configuration PayPal mise a jour', data };
+  }
+
+  // ==================== ELGIOPAY (carte bancaire) ====================
+
+  @Get('payments/elgiopay')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Voir la configuration ElgioPay (carte bancaire)' })
+  async getElgioPay() {
+    return { result: true, data: await this.settingsService.getElgioPaySettings() };
+  }
+
+  @Patch('payments/elgiopay')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modifier la configuration ElgioPay (carte bancaire)' })
+  async updateElgioPay(@Body() dto: UpdateElgioPaySettingsDto) {
+    const data = await this.settingsService.updateElgioPaySettings(dto);
+    return { result: true, message: 'Configuration ElgioPay mise a jour', data };
   }
 
   // ==================== COD ====================

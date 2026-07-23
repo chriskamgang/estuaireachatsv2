@@ -205,10 +205,17 @@ export class ProductsService {
   }
 
   async findAll(query: ProductQueryDto, userId?: string) {
-    const { search, categoryId, brandId, shopId, minPrice, maxPrice, sort, origin } = query;
+    const { search, categoryId, brandId, shopId, minPrice, maxPrice, sort, origin, category } = query;
     const page = query.page ?? 1;
     const perPage = query.perPage ?? 20;
     const skip = (page - 1) * perPage;
+
+    // Resoudre le slug categorie en categoryId si fourni
+    let resolvedCategoryId = categoryId;
+    if (!resolvedCategoryId && category) {
+      const cat = await this.prisma.category.findFirst({ where: { slug: category }, select: { id: true } });
+      if (cat) resolvedCategoryId = cat.id;
+    }
 
     const where: Prisma.ProductWhereInput = {
       isPublished: true,
@@ -227,7 +234,7 @@ export class ProductsService {
           { tags: { string_contains: search } },
         ],
       }),
-      ...(categoryId && { categoryId }),
+      ...(resolvedCategoryId && { categoryId: resolvedCategoryId }),
       ...(brandId && { brandId }),
       ...(shopId && { shopId }),
       ...(origin && { origin }),
@@ -333,7 +340,7 @@ export class ProductsService {
     return { result: true, data: products };
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, requestUserId?: string) {
     // Try by slug first, then by ID
     let product = await this.prisma.product.findUnique({
       where: { slug },
@@ -352,12 +359,14 @@ export class ProductsService {
     }
 
     // Verifier que le vendeur a un package paye (ou que c'est un produit admin)
+    // Sauf si c'est le proprietaire du produit qui y accede
     const shop = await this.prisma.shop.findUnique({
       where: { id: product.shopId },
-      select: { sellerPackageId: true, user: { select: { role: true } } },
+      select: { sellerPackageId: true, userId: true, user: { select: { role: true } } },
     });
 
-    if (shop && !shop.sellerPackageId && shop.user?.role !== 'ADMIN') {
+    const isOwner = requestUserId && shop?.userId === requestUserId;
+    if (shop && !shop.sellerPackageId && shop.user?.role !== 'ADMIN' && !isOwner) {
       throw new NotFoundException('Produit non trouve');
     }
 
@@ -458,7 +467,7 @@ export class ProductsService {
       throw new ForbiddenException('Vous ne pouvez modifier que vos propres produits');
     }
 
-    const { images, stocks, priceTiers, discountStart, discountEnd, ...productData } = dto;
+    const { images, stocks, priceTiers, discountStart, discountEnd, brandName, ...productData } = dto;
 
     // Si des images/stocks/priceTiers sont fournis, on remplace tout
     const updateOps: Prisma.ProductUpdateInput = {
@@ -466,6 +475,16 @@ export class ProductsService {
       ...(discountStart !== undefined && { discountStart: new Date(discountStart) }),
       ...(discountEnd !== undefined && { discountEnd: new Date(discountEnd) }),
     };
+
+    // Gestion du nom de marque : trouver ou creer la marque
+    if (brandName && !productData.brandId) {
+      const brandSlug = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      let brand = await this.prisma.brand.findFirst({ where: { slug: brandSlug } });
+      if (!brand) {
+        brand = await this.prisma.brand.create({ data: { name: brandName, slug: brandSlug } });
+      }
+      updateOps.brand = { connect: { id: brand.id } };
+    }
 
     if (images !== undefined) {
       // Supprimer les anciennes images puis creer les nouvelles

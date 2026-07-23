@@ -77,6 +77,42 @@ export class PaymentsController {
     return this.paymentsService.handleGfsWebhook(req.body, rawBody, signature);
   }
 
+  // ==================== PAIEMENT PAR CARTE (ElgioPay) ====================
+
+  @Get('card/init')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Recuperer la cle Stripe publishable via ElgioPay' })
+  async getCardPublishableKey() {
+    return this.paymentsService.getCardPublishableKey();
+  }
+
+  @Post('card/process')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Traiter le paiement par carte (envoyer paymentMethodId Stripe)' })
+  async processCardPayment(
+    @CurrentUser('id') userId: string,
+    @Body('combinedOrderId') combinedOrderId: string,
+    @Body('paymentMethodId') paymentMethodId: string,
+    @Body('cardholderName') cardholderName: string,
+  ) {
+    return this.paymentsService.processCardPayment(userId, combinedOrderId, paymentMethodId, cardholderName);
+  }
+
+  @Post('card/confirm')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirmer le paiement apres 3D Secure' })
+  async confirmCardPayment(
+    @CurrentUser('id') userId: string,
+    @Body('combinedOrderId') combinedOrderId: string,
+    @Body('paymentIntentId') paymentIntentId: string,
+    @Body('transactionId') transactionId: string,
+  ) {
+    return this.paymentsService.confirmCardPayment(userId, combinedOrderId, paymentIntentId, transactionId);
+  }
+
   // ==================== RETOUR PASSERELLE ====================
 
   @Get('gateway/return')

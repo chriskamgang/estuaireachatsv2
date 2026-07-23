@@ -12,7 +12,7 @@ export class InitPaymentDto {
   @IsNotEmpty()
   combinedOrderId: string;
 
-  @ApiProperty({ enum: ['MTN_MOMO', 'ORANGE_MONEY', 'KPAY_GATEWAY', 'GFS_PAYMENT', 'PAYPAL', 'COD'] })
+  @ApiProperty({ enum: ['MTN_MOMO', 'ORANGE_MONEY', 'KPAY_GATEWAY', 'GFS_PAYMENT', 'PAYPAL', 'COD', 'STRIPE'] })
   @IsString()
   @IsNotEmpty()
   method: string;
@@ -37,4 +37,15 @@ export class InitPaymentDto {
   @IsOptional()
   @IsString()
   cancelUrl?: string;
+
+  // Champs carte bancaire (ElgioPay/Stripe)
+  @ApiPropertyOptional({ description: 'Token Stripe (payment method id)' })
+  @IsOptional()
+  @IsString()
+  paymentMethodId?: string;
+
+  @ApiPropertyOptional({ description: 'Nom du titulaire de la carte' })
+  @IsOptional()
+  @IsString()
+  cardholderName?: string;
 }

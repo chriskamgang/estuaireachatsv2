@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/utils';
 import { api } from '@/lib/api';
 import AddressMapPicker from '@/components/AddressMapPicker';
+import StripeCardForm from '@/components/StripeCardForm';
 import { estimateShipping, type ShippingRate } from '@/lib/shipping';
 import {
   MapPin,
@@ -35,7 +36,7 @@ interface Address {
   lng?: number;
 }
 
-type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY' | 'KPAY_GATEWAY' | 'GFS_PAYMENT' | 'PAYPAL' | 'COD';
+type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY' | 'KPAY_GATEWAY' | 'GFS_PAYMENT' | 'PAYPAL' | 'COD' | 'STRIPE';
 
 const STEPS = [
   { num: 1, label: 'Adresse', icon: MapPin },
@@ -60,7 +61,7 @@ export default function CheckoutPage() {
   const [shippingChoices, setShippingChoices] = useState<Record<string, ShippingChoice>>({});
 
   // Payment
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MTN_MOMO');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
 
   // Confirmation
@@ -177,7 +178,7 @@ export default function CheckoutPage() {
   }
 
   async function handleConfirmOrder() {
-    if (confirmingOrder) return;
+    if (confirmingOrder || !paymentMethod) return;
     setConfirmingOrder(true);
     setOrderError('');
     try {
@@ -190,16 +191,13 @@ export default function CheckoutPage() {
       const num = res.data?.orderNumber || '';
       setOrderNumber(num);
 
-      // 2. Commande creee — vider le panier frontend maintenant
-      //    (le panier serveur est deja vide apres POST /orders)
-      clearCart();
-
-      // 3. Initier le paiement
+      // 2. Initier le paiement
       if (paymentMethod === 'COD') {
         await api.post('/payments/init', {
           combinedOrderId,
           method: 'COD',
         });
+        clearCart();
         setStep(4);
       } else if (paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY') {
         if (!phoneNumber || phoneNumber.length < 12) {
@@ -212,6 +210,7 @@ export default function CheckoutPage() {
           mode: 'USSD',
           phoneNumber,
         });
+        clearCart();
         setStep(4);
       } else if (paymentMethod === 'GFS_PAYMENT') {
         const payRes = await api.post<{ data: { paymentUrl: string } }>('/payments/init', {
@@ -538,11 +537,24 @@ export default function CheckoutPage() {
               <div className="rounded-lg bg-white p-4 sm:p-6 shadow-sm">
                 <h2 className="mb-6 text-lg sm:text-xl font-bold text-[#191919]">Methode de paiement</h2>
 
+                {/* Bouton Changer quand une methode est selectionnee */}
+                {paymentMethod && (
+                  <button
+                    onClick={() => setPaymentMethod(null)}
+                    className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#4A90D9] hover:underline"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+                    Changer de methode de paiement
+                  </button>
+                )}
+
                 <div className="space-y-3">
                   {/* MTN MoMo */}
+                  {(!paymentMethod || paymentMethod === 'MTN_MOMO') && (
                   <label
+                    onClick={() => setPaymentMethod('MTN_MOMO')}
                     className={`flex cursor-pointer items-center gap-4 rounded-lg border-2 p-4 transition ${
-                      paymentMethod === 'MTN_MOMO' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200'
+                      paymentMethod === 'MTN_MOMO' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <input
@@ -558,11 +570,14 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-500">Paiement direct via MTN MoMo</p>
                     </div>
                   </label>
+                  )}
 
                   {/* Orange Money */}
+                  {(!paymentMethod || paymentMethod === 'ORANGE_MONEY') && (
                   <label
+                    onClick={() => setPaymentMethod('ORANGE_MONEY')}
                     className={`flex cursor-pointer items-center gap-4 rounded-lg border-2 p-4 transition ${
-                      paymentMethod === 'ORANGE_MONEY' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200'
+                      paymentMethod === 'ORANGE_MONEY' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <input
@@ -578,6 +593,7 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-500">Paiement direct via Orange Money</p>
                     </div>
                   </label>
+                  )}
 
                   {/* Phone number input for MoMo/OM */}
                   {(paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY') && (
@@ -597,9 +613,11 @@ export default function CheckoutPage() {
                   )}
 
                   {/* GFSolutions */}
+                  {(!paymentMethod || paymentMethod === 'GFS_PAYMENT') && (
                   <label
+                    onClick={() => setPaymentMethod('GFS_PAYMENT')}
                     className={`flex cursor-pointer items-center gap-4 rounded-lg border-2 p-4 transition ${
-                      paymentMethod === 'GFS_PAYMENT' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200'
+                      paymentMethod === 'GFS_PAYMENT' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <input
@@ -615,11 +633,14 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-500">Paiement via GFSolutions</p>
                     </div>
                   </label>
+                  )}
 
                   {/* PayPal */}
+                  {(!paymentMethod || paymentMethod === 'PAYPAL') && (
                   <label
+                    onClick={() => setPaymentMethod('PAYPAL')}
                     className={`flex cursor-pointer items-center gap-4 rounded-lg border-2 p-4 transition ${
-                      paymentMethod === 'PAYPAL' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200'
+                      paymentMethod === 'PAYPAL' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <input
@@ -637,11 +658,114 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-500">Paiement international via PayPal</p>
                     </div>
                   </label>
+                  )}
+
+                  {/* Carte bancaire (Stripe) */}
+                  {(!paymentMethod || paymentMethod === 'STRIPE') && (
+                  <label
+                    onClick={() => setPaymentMethod('STRIPE')}
+                    className={`flex cursor-pointer items-center gap-4 rounded-lg border-2 p-4 transition ${
+                      paymentMethod === 'STRIPE' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={paymentMethod === 'STRIPE'}
+                      onChange={() => setPaymentMethod('STRIPE')}
+                      className="accent-[#E82328]"
+                    />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#4A90D9] text-sm font-bold text-white">
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[#191919]">Carte bancaire</p>
+                      <p className="text-xs text-gray-500">Visa, Mastercard, American Express</p>
+                    </div>
+                  </label>
+                  )}
+
+                  {/* Formulaire carte inline */}
+                  {paymentMethod === 'STRIPE' && (
+                    <div className="ml-0 sm:ml-14 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <StripeCardForm
+                        onSubmit={async (stripe, elements, cardholderName) => {
+                          setConfirmingOrder(true);
+                          setOrderError('');
+                          try {
+                            // 1. Creer un PaymentMethod via Stripe.js (tokenisation)
+                            const { CardNumberElement } = await import('@stripe/react-stripe-js');
+                            const cardElement = elements.getElement(CardNumberElement);
+                            const { error: pmError, paymentMethod: pm } = await stripe.createPaymentMethod({
+                              type: 'card',
+                              card: cardElement,
+                              billing_details: { name: cardholderName },
+                            });
+
+                            if (pmError || !pm) {
+                              setOrderError(pmError?.message || 'Erreur lors de la tokenisation de la carte.');
+                              return;
+                            }
+
+                            // 2. Creer la commande
+                            const res = await api.post<{ data: { combinedOrderId: string; orderNumber: string } }>('/orders', {
+                              addressId: selectedAddress,
+                              paymentMethod: 'STRIPE',
+                            });
+                            const combinedOrderId = res.data?.combinedOrderId;
+                            const num = res.data?.orderNumber || '';
+                            setOrderNumber(num);
+
+                            // 3. Init paiement (ElgioPay init)
+                            await api.post('/payments/init', {
+                              combinedOrderId,
+                              method: 'STRIPE',
+                            });
+
+                            // 4. Envoyer le paymentMethodId au backend (ElgioPay process)
+                            const processRes = await api.post<{ requires_action?: boolean; payment_intent_client_secret?: string; payment_intent_id?: string; transaction_id?: string }>('/payments/card/process', {
+                              combinedOrderId,
+                              paymentMethodId: pm.id,
+                              cardholderName,
+                            });
+
+                            // 5. Si 3D Secure requis, confirmer cote client
+                            if (processRes.requires_action && processRes.payment_intent_client_secret) {
+                              const { error: confirmError } = await stripe.confirmCardPayment(
+                                processRes.payment_intent_client_secret
+                              );
+                              if (confirmError) {
+                                setOrderError(confirmError.message || 'Echec de la verification 3D Secure.');
+                                return;
+                              }
+                              // 6. Confirmer cote backend (ElgioPay confirm)
+                              await api.post('/payments/card/confirm', {
+                                combinedOrderId,
+                                paymentIntentId: processRes.payment_intent_id,
+                                transactionId: processRes.transaction_id,
+                              });
+                            }
+
+                            // 7. Paiement reussi — vider le panier
+                            clearCart();
+                            setStep(4);
+                          } catch (err: any) {
+                            setOrderError(err?.response?.data?.message || err?.message || 'Erreur lors du paiement.');
+                          } finally {
+                            setConfirmingOrder(false);
+                          }
+                        }}
+                        loading={confirmingOrder}
+                      />
+                    </div>
+                  )}
 
                   {/* COD */}
+                  {(!paymentMethod || paymentMethod === 'COD') && (
                   <label
+                    onClick={() => setPaymentMethod('COD')}
                     className={`flex cursor-pointer items-center gap-4 rounded-lg border-2 p-4 transition ${
-                      paymentMethod === 'COD' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200'
+                      paymentMethod === 'COD' ? 'border-[#E82328] bg-orange-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <input
@@ -659,6 +783,7 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-500">Payez en especes a la reception</p>
                     </div>
                   </label>
+                  )}
                 </div>
 
 
@@ -675,16 +800,19 @@ export default function CheckoutPage() {
                   >
                     Retour
                   </button>
-                  <button
-                    onClick={() => { setOrderError(''); handleConfirmOrder(); }}
-                    disabled={confirmingOrder || ((paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY') && phoneNumber.length < 12)}
-                    className="flex items-center justify-center gap-2 rounded-lg bg-[#E82328] px-6 sm:px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-60"
-                  >
-                    {confirmingOrder && (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    )}
-                    Confirmer et payer
-                  </button>
+                  {/* Masquer le bouton si le formulaire Stripe est affiche ou aucune methode selectionnee */}
+                  {paymentMethod && paymentMethod !== 'STRIPE' && (
+                    <button
+                      onClick={() => { setOrderError(''); handleConfirmOrder(); }}
+                      disabled={confirmingOrder || ((paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY') && phoneNumber.length < 12)}
+                      className="flex items-center justify-center gap-2 rounded-lg bg-[#E82328] px-6 sm:px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#D11F23] disabled:opacity-60"
+                    >
+                      {confirmingOrder && (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      )}
+                      Confirmer et payer
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -744,7 +872,9 @@ export default function CheckoutPage() {
                 ? 'Votre commande a ete enregistree. Vous payerez a la livraison.'
                 : paymentMethod === 'MTN_MOMO' || paymentMethod === 'ORANGE_MONEY'
                   ? 'Une demande de paiement a ete envoyee sur votre telephone. Confirmez le paiement pour valider votre commande.'
-                  : 'Merci pour votre commande sur EstuaireAchats.'}
+                  : paymentMethod === 'STRIPE'
+                    ? 'Votre paiement par carte a ete accepte. Votre commande est confirmee.'
+                    : 'Merci pour votre commande sur EstuaireAchats.'}
             </p>
             <p className="mb-8 text-lg font-semibold text-[#191919]">
               Numero de commande : <span className="text-[#E82328]">{orderNumber}</span>

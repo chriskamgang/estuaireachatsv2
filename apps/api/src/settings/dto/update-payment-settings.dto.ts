@@ -76,3 +76,25 @@ export class UpdatePaypalSettingsDto {
   @IsBoolean()
   enabled?: boolean;
 }
+
+export class UpdateElgioPaySettingsDto {
+  @ApiPropertyOptional({ description: 'URL API ElgioPay (sandbox ou production)' })
+  @IsOptional()
+  @IsString()
+  apiUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Publishable Key ElgioPay (pk_test_xxx ou pk_live_xxx)' })
+  @IsOptional()
+  @IsString()
+  publishableKey?: string;
+
+  @ApiPropertyOptional({ description: 'Secret Key ElgioPay (sk_test_xxx ou sk_live_xxx)' })
+  @IsOptional()
+  @IsString()
+  secretKey?: string;
+
+  @ApiPropertyOptional({ description: 'Activer ElgioPay (carte bancaire)' })
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+}

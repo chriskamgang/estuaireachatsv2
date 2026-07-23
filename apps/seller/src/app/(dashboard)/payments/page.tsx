@@ -22,6 +22,7 @@ const methodLabels: Record<string, string> = {
   KPAY_GATEWAY: 'KPay Gateway',
   GFS_PAYMENT: 'GFSolution',
   PAYPAL: 'PayPal',
+  STRIPE: 'Carte bancaire',
   COD: 'Paiement livraison',
 };
 

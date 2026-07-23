@@ -17,8 +17,8 @@ export class CreateOrderDto {
   @IsOptional()
   pickupPointId?: string;
 
-  @ApiPropertyOptional({ enum: ['MTN_MOMO', 'ORANGE_MONEY', 'KPAY_GATEWAY', 'GFS_PAYMENT', 'PAYPAL', 'COD'] })
-  @IsEnum(['MTN_MOMO', 'ORANGE_MONEY', 'KPAY_GATEWAY', 'GFS_PAYMENT', 'PAYPAL', 'COD'])
+  @ApiPropertyOptional({ enum: ['MTN_MOMO', 'ORANGE_MONEY', 'KPAY_GATEWAY', 'GFS_PAYMENT', 'PAYPAL', 'COD', 'STRIPE'] })
+  @IsEnum(['MTN_MOMO', 'ORANGE_MONEY', 'KPAY_GATEWAY', 'GFS_PAYMENT', 'PAYPAL', 'COD', 'STRIPE'])
   @IsOptional()
   paymentMethod?: string;
 

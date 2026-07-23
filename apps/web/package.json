@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@ea/shared": "workspace:*",
+    "@stripe/react-stripe-js": "^6.8.0",
+    "@stripe/stripe-js": "^9.12.0",
     "clsx": "^2.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.500.0",

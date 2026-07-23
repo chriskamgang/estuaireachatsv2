@@ -163,8 +163,8 @@ function TrackingTimeline({ tracking }: { tracking: TrackingData }) {
 
       {/* Vertical timeline */}
       <div className="relative ml-4">
-        {tracking.steps.map((step, i) => {
-          const isLast = i === tracking.steps.length - 1;
+        {(tracking.steps || []).map((step, i) => {
+          const isLast = i === (tracking.steps || []).length - 1;
           const IconMap: Record<string, typeof Package> = {
             PENDING: Package,
             PROCESSING: PackageCheck,
@@ -322,11 +322,43 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     api
-      .get<{ data: OrderDetail }>(`/orders/${params.id}`)
+      .get<{ data: any }>(`/orders/${params.id}`)
       .then((res) => {
-        const o = res.data || null;
+        const raw = res.data;
+        if (!raw) { setOrder(null); return; }
+        const o: OrderDetail = {
+          id: raw.id,
+          code: raw.orderNumber || raw.code || raw.id,
+          date: raw.createdAt || raw.date,
+          status: raw.status,
+          paymentMethod: raw.payment?.method || raw.paymentMethod || '',
+          paymentStatus: raw.paymentStatus || raw.payment?.status || '',
+          sellerName: raw.seller
+            ? `${raw.seller.firstName || ''} ${raw.seller.lastName || ''}`.trim()
+            : '',
+          isInternational: raw.isInternational,
+          items: (raw.details || raw.items || []).map((d: any) => ({
+            id: d.id,
+            name: d.name || d.productName || '',
+            variant: d.variation || d.variant,
+            thumbnailUrl: d.image || d.thumbnailUrl || d.product?.images?.[0]?.url || '',
+            quantity: d.quantity,
+            unitPrice: d.price || d.unitPrice || 0,
+          })),
+          shippingAddress: raw.address ? {
+            name: `${raw.address.firstName || ''} ${raw.address.lastName || ''}`.trim(),
+            phone: raw.address.phone || '',
+            address: raw.address.address || '',
+            city: raw.address.city || '',
+            country: raw.address.country || '',
+          } : { name: '', phone: '', address: '', city: '', country: '' },
+          subtotal: raw.subtotal || raw.total || 0,
+          shipping: raw.shippingCost || 0,
+          tax: raw.tax || 0,
+          total: raw.total || 0,
+        };
         setOrder(o);
-        if (o) fetchTracking(o);
+        fetchTracking(o);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

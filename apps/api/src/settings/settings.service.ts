@@ -24,6 +24,11 @@ const PAYMENT_KEYS = {
   paypal_client_secret: 'paypal_client_secret',
   paypal_mode: 'paypal_mode',
   paypal_enabled: 'paypal_enabled',
+  // ElgioPay (carte bancaire)
+  elgiopay_api_url: 'elgiopay_api_url',
+  elgiopay_publishable_key: 'elgiopay_publishable_key',
+  elgiopay_secret_key: 'elgiopay_secret_key',
+  elgiopay_enabled: 'elgiopay_enabled',
   // COD
   cod_enabled: 'cod_enabled',
 } as const;
@@ -37,6 +42,8 @@ const SENSITIVE_KEYS = new Set([
   'gfs_api_secret',
   'paypal_client_id',
   'paypal_client_secret',
+  'elgiopay_secret_key',
+  'elgiopay_publishable_key',
   'gemini_api_key',
   'unsplash_access_key',
 ]);
@@ -224,6 +231,43 @@ export class SettingsService {
 
     this.logger.log('[Settings] PayPal mis a jour');
     return this.getPaypalSettings();
+  }
+
+  // ==================== ELGIOPAY (carte bancaire) ====================
+
+  async getElgioPaySettings() {
+    const [apiUrl, publishableKey, secretKey, enabled] = await Promise.all([
+      this.getValue('elgiopay_api_url', 'ELGIOPAY_API_URL', 'https://sandbox-api.elgiopay.com'),
+      this.getValue('elgiopay_publishable_key', 'ELGIOPAY_PUBLISHABLE_KEY'),
+      this.getValue('elgiopay_secret_key', 'ELGIOPAY_SECRET_KEY'),
+      this.getBool('elgiopay_enabled', undefined, false),
+    ]);
+
+    const isTest = publishableKey.startsWith('pk_test_');
+
+    return {
+      apiUrl,
+      publishableKey: this.mask(publishableKey),
+      secretKey: this.mask(secretKey),
+      enabled,
+      configured: !!publishableKey && !!secretKey,
+      environment: publishableKey ? (isTest ? 'sandbox' : 'production') : 'non configure',
+    };
+  }
+
+  async updateElgioPaySettings(dto: {
+    apiUrl?: string;
+    publishableKey?: string;
+    secretKey?: string;
+    enabled?: boolean;
+  }) {
+    if (dto.apiUrl !== undefined) await this.upsert('elgiopay_api_url', dto.apiUrl);
+    if (dto.publishableKey !== undefined) await this.upsert('elgiopay_publishable_key', dto.publishableKey);
+    if (dto.secretKey !== undefined) await this.upsert('elgiopay_secret_key', dto.secretKey);
+    if (dto.enabled !== undefined) await this.upsert('elgiopay_enabled', String(dto.enabled));
+
+    this.logger.log('[Settings] ElgioPay mis a jour');
+    return this.getElgioPaySettings();
   }
 
   // ==================== COD ====================

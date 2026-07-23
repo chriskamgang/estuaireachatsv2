@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -73,6 +73,7 @@ enum PaymentMethod {
   GFS_PAYMENT
   PAYPAL
   COD
+  STRIPE
 }
 
 enum ShippingType {
@@ -401,7 +402,7 @@ model Product {
 model ProductImage {
   id        String  @id @default(cuid())
   productId String
-  url       String  @db.LongText
+  url       String  @db.Text
   alt       String?
   order     Int     @default(0)
   isMain    Boolean @default(false)
@@ -1217,7 +1218,7 @@ model BlogPost {
   categoryId String?
   title      String
   slug       String         @unique @db.VarChar(255)
-  content    String?    @db.LongText
+  content    String?    @db.Text
   excerpt    String?    @db.Text
   image      String?
   author     String?

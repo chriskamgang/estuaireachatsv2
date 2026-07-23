@@ -260,7 +260,7 @@ export default function Header() {
               </div>
             )}
 
-            <Link href="/orders" className="flex flex-col items-center rounded-md px-2.5 py-1.5 text-gray-2 transition-colors hover:bg-gray-6 hover:text-dark">
+            <Link href="/account/orders" className="flex flex-col items-center rounded-md px-2.5 py-1.5 text-gray-2 transition-colors hover:bg-gray-6 hover:text-dark">
               <ClipboardList size={20} />
               <span className="mt-0.5 text-[10px]">Commandes</span>
             </Link>
@@ -287,7 +287,7 @@ export default function Header() {
                 </button>
                 <div className="invisible absolute right-0 top-full z-50 min-w-[180px] rounded-md border border-gray-5 bg-white py-1 opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100">
                   <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-1 hover:bg-gray-6"><User size={14} />Mon compte</Link>
-                  <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-1 hover:bg-gray-6"><ClipboardList size={14} />Mes commandes</Link>
+                  <Link href="/account/orders" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-1 hover:bg-gray-6"><ClipboardList size={14} />Mes commandes</Link>
                   <hr className="my-1 border-gray-5" />
                   <button onClick={logout} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-1 hover:bg-gray-6"><LogOut size={14} />Deconnexion</button>
                 </div>

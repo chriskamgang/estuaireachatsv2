@@ -58,6 +58,16 @@ export default function OrdersPage() {
   const [meta, setMeta] = useState<OrdersMeta>({ total: 0, page: 1, perPage: PER_PAGE });
   const [loading, setLoading] = useState(true);
 
+  async function cancelOrder(orderId: string) {
+    if (!confirm('Voulez-vous vraiment annuler cette commande ?')) return;
+    try {
+      await api.post(`/orders/${orderId}/cancel`);
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: 'CANCELLED' } : o));
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Erreur lors de l\'annulation.');
+    }
+  }
+
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams({ perPage: String(PER_PAGE), page: String(currentPage) });
@@ -192,7 +202,10 @@ export default function OrdersPage() {
                         </button>
                       )}
                       {order.status === 'PENDING' && (
-                        <button className="flex items-center gap-1.5 rounded-lg border border-primary px-4 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5">
+                        <button
+                          onClick={() => cancelOrder(order.id)}
+                          className="flex items-center gap-1.5 rounded-lg border border-primary px-4 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
+                        >
                           <X size={14} />
                           Annuler
                         </button>

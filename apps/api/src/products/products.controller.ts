@@ -112,9 +112,13 @@ export class ProductsController {
   }
 
   @Get(':slug')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Detail complet d\'un produit par slug (public)' })
-  findBySlug(@Param('slug') slug: string) {
-    return this.productsService.findBySlug(slug);
+  findBySlug(
+    @Param('slug') slug: string,
+    @CurrentUser('id') userId?: string,
+  ) {
+    return this.productsService.findBySlug(slug, userId);
   }
 
   @Post()

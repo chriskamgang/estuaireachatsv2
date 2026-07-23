@@ -165,7 +165,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 onClick={handleShopClick}
                 className="text-[12px] text-primary hover:underline cursor-pointer"
               >
-                <a href={`/shop/${shopSlug}`}>{shopName}</a>
+                {shopName}
               </span>
             ) : (
               <span className="text-[12px] text-gray-2">{shopName}</span>

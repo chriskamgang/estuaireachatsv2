@@ -13,6 +13,11 @@ export class ProductQueryDto {
   @IsString()
   categoryId?: string;
 
+  @ApiPropertyOptional({ description: 'Slug de la categorie' })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @ApiPropertyOptional({ description: 'ID de la marque' })
   @IsOptional()
   @IsString()

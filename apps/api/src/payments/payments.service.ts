@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { KPayService } from './kpay.service';
 import { GfsService } from './gfs.service';
+import { ElgioPayService } from './elgiopay.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MerciEService } from '../delivery/merci-e.service';
 import { CouponsService } from '../coupons/coupons.service';
@@ -23,6 +24,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private kpay: KPayService,
     private gfs: GfsService,
+    private elgioPay: ElgioPayService,
     private notifications: NotificationsService,
     private merciE: MerciEService,
     private coupons: CouponsService,
@@ -86,6 +88,11 @@ export class PaymentsService {
         throw new BadRequestException('returnUrl requis pour GFSolutions');
       }
       return this.handleGfsPayment(combinedOrder, totalAmount, dto.returnUrl);
+    }
+
+    // ==================== STRIPE (carte bancaire) ====================
+    if (method === PaymentMethod.STRIPE) {
+      return this.handleStripePayment(combinedOrder, totalAmount);
     }
 
     // ==================== PAYPAL ====================
@@ -334,6 +341,209 @@ export class PaymentsService {
         expiresAt: gfsResult.expiresAt,
       },
     };
+  }
+
+  // ==================== ELGIOPAY / STRIPE (carte bancaire) ====================
+
+  /**
+   * Etape 1 : Init ElgioPay + creer Payment en PENDING
+   * Le frontend appelle ensuite /payments/card/process avec le paymentMethodId Stripe
+   */
+  private async handleStripePayment(combinedOrder: any, totalAmount: number) {
+    // Init ElgioPay
+    const initResult = await this.elgioPay.initPayment();
+
+    const externalId = `EA-CARD-${combinedOrder.id}-${uuidv4().slice(0, 8)}`;
+
+    for (const order of combinedOrder.orders) {
+      if (order.payment) {
+        await this.prisma.payment.update({
+          where: { id: order.payment.id },
+          data: {
+            method: PaymentMethod.STRIPE,
+            externalId,
+            status: PaymentStatus.PENDING,
+            metadata: initResult,
+          },
+        });
+      } else {
+        await this.prisma.payment.create({
+          data: {
+            orderId: order.id,
+            method: PaymentMethod.STRIPE,
+            amount: order.total,
+            externalId,
+            status: PaymentStatus.PENDING,
+            metadata: initResult,
+          },
+        });
+      }
+
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { paymentMethod: PaymentMethod.STRIPE, paymentStatus: PaymentStatus.PENDING },
+      });
+    }
+
+    return {
+      result: true,
+      message: 'Paiement par carte initie. Envoyez les donnees de carte.',
+      data: {
+        method: 'STRIPE',
+        status: 'PENDING',
+        combinedOrderId: combinedOrder.id,
+        externalId,
+        ...initResult,
+      },
+    };
+  }
+
+  /**
+   * Recuperer la cle Stripe publishable via ElgioPay /card-payment/init
+   */
+  async getCardPublishableKey() {
+    const result = await this.elgioPay.initPayment();
+    return { result: true, publishableKey: result.app_id };
+  }
+
+  /**
+   * Etape 2 : Traiter le paiement par carte via ElgioPay
+   * Appele par le frontend apres que Stripe.js a cree un paymentMethod
+   */
+  async processCardPayment(userId: string, combinedOrderId: string, paymentMethodId: string, cardholderName: string) {
+    const combinedOrder = await this.prisma.combinedOrder.findUnique({
+      where: { id: combinedOrderId },
+      include: { orders: { include: { payment: true } } },
+    });
+
+    if (!combinedOrder) throw new NotFoundException('Commande introuvable');
+    if (combinedOrder.userId !== userId) throw new ForbiddenException('Acces refuse');
+
+    // Recuperer l'email de l'utilisateur
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+
+    const totalAmount = combinedOrder.orders.reduce((sum, o) => sum + o.total, 0);
+
+    try {
+      // Appeler ElgioPay process
+      const processResult = await this.elgioPay.processPayment({
+        amount: totalAmount,
+        currency: 'XAF',
+        paymentMethodId,
+        cardholderName,
+        customerEmail: user?.email || undefined,
+        description: `Commande EstuaireAchats ${combinedOrderId}`,
+        reference: combinedOrderId,
+      });
+
+      this.logger.log(`[ElgioPay] Process result: ${JSON.stringify(processResult)}`);
+
+      // Si 3DS requis, renvoyer le client_secret au frontend pour authentication
+      if (processResult?.requires_action || processResult?.requires_confirmation) {
+        this.logger.log(`[ElgioPay] 3DS requis pour commande ${combinedOrderId}`);
+        return {
+          result: true,
+          requires_action: true,
+          payment_intent_client_secret: processResult.payment_intent_client_secret,
+          payment_intent_id: processResult.payment_intent_id,
+          transaction_id: processResult.transaction_id,
+          message: 'Verification 3D Secure requise.',
+        };
+      }
+
+      // Paiement direct sans 3DS — marquer comme paye
+      await this.markOrdersAsPaid(combinedOrder, processResult?.transaction_id || paymentMethodId, processResult, userId);
+
+      return {
+        result: true,
+        message: 'Paiement par carte accepte.',
+        data: { status: 'PAID' },
+      };
+    } catch (err: any) {
+      // Marquer comme echec
+      for (const order of combinedOrder.orders) {
+        if (order.payment) {
+          await this.prisma.payment.update({
+            where: { id: order.payment.id },
+            data: {
+              status: PaymentStatus.FAILED,
+              failureReason: err.message || 'Paiement par carte echoue',
+            },
+          });
+        }
+
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: PaymentStatus.FAILED },
+        });
+      }
+
+      this.logger.warn(`[ElgioPay] Paiement ECHEC pour commande ${combinedOrderId}: ${err.message}`);
+      throw new BadRequestException(err.message || 'Paiement par carte echoue');
+    }
+  }
+
+  /**
+   * Confirmer le paiement apres 3D Secure
+   */
+  async confirmCardPayment(userId: string, combinedOrderId: string, paymentIntentId: string, transactionId?: string) {
+    const combinedOrder = await this.prisma.combinedOrder.findUnique({
+      where: { id: combinedOrderId },
+      include: { orders: { include: { payment: true } } },
+    });
+
+    if (!combinedOrder) throw new NotFoundException('Commande introuvable');
+    if (combinedOrder.userId !== userId) throw new ForbiddenException('Acces refuse');
+
+    try {
+      const confirmResult = await this.elgioPay.confirmPayment({
+        payment_intent_id: paymentIntentId,
+        transaction_id: transactionId,
+        reference: combinedOrderId,
+      });
+
+      this.logger.log(`[ElgioPay] Confirm result: ${JSON.stringify(confirmResult)}`);
+
+      await this.markOrdersAsPaid(combinedOrder, confirmResult?.transaction_id || paymentIntentId, confirmResult, userId);
+
+      return {
+        result: true,
+        message: 'Paiement par carte confirme.',
+        data: { status: 'PAID' },
+      };
+    } catch (err: any) {
+      this.logger.warn(`[ElgioPay] Confirm ECHEC pour commande ${combinedOrderId}: ${err.message}`);
+      throw new BadRequestException(err.message || 'Confirmation du paiement echouee');
+    }
+  }
+
+  private async markOrdersAsPaid(combinedOrder: any, providerRef: string, metadata: any, userId: string) {
+    for (const order of combinedOrder.orders) {
+      if (order.payment) {
+        await this.prisma.payment.update({
+          where: { id: order.payment.id },
+          data: {
+            status: PaymentStatus.PAID,
+            paidAt: new Date(),
+            providerRef,
+            metadata,
+          },
+        });
+      }
+
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: PaymentStatus.PAID, status: 'CONFIRMED' },
+      });
+
+      this.notifyPaymentCompleted(order.id, order.total).catch(() => {});
+
+      this.coupons.generateLoyaltyCoupon(userId).catch((err) => {
+        this.logger.warn(`[Loyalty] Erreur generation coupon: ${err.message}`);
+      });
+    }
+
+    this.logger.log(`[ElgioPay] Paiement COMPLETE pour commande ${combinedOrder.id}`);
   }
 
   // ==================== VERIFIER STATUT ====================
