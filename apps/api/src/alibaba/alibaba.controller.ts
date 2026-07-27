@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AlibabaScraperService } from './alibaba-scraper.service';
+import { AlibabaApiService } from './alibaba-api.service';
+import { AlibabaImportService } from './alibaba-import.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -23,26 +25,36 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AlibabaController {
   constructor(
     private scraperService: AlibabaScraperService,
+    private apiService: AlibabaApiService,
+    private importService: AlibabaImportService,
     private prisma: PrismaService,
   ) {}
 
+  // ── STATUS ───────────────────────────────────────────────────────
+
+  @Get('status')
+  @ApiOperation({ summary: 'Statut de l\'API Alibaba Open Platform' })
+  async getStatus() {
+    return this.apiService.getStatus();
+  }
+
+  // ── SCRAPING (disponible maintenant) ─────────────────────────────
+
   @Post('scrape')
-  @ApiOperation({ summary: 'Scraper un fournisseur Alibaba (preview sans import)' })
+  @ApiOperation({ summary: '[SCRAPING] Preview d\'un fournisseur Alibaba sans import' })
   async scrapeSupplier(@Body() body: { url: string }) {
     const supplier = await this.scraperService.scrapeSupplierPage(body.url);
     return { result: true, data: supplier };
   }
 
-  @Post('import')
-  @ApiOperation({ summary: 'Scraper et importer un fournisseur Alibaba' })
-  async importSupplier(
-    @Body() body: { url: string; categoryId?: string },
-  ) {
+  @Post('scrape/import')
+  @ApiOperation({ summary: '[SCRAPING] Scraper et importer un fournisseur Alibaba' })
+  async scrapeAndImport(@Body() body: { url: string; categoryId?: string }) {
     return this.scraperService.scrapeAndImport(body.url, body.categoryId);
   }
 
-  @Post('import-manual')
-  @ApiOperation({ summary: 'Importer manuellement un fournisseur (saisie manuelle)' })
+  @Post('scrape/import-manual')
+  @ApiOperation({ summary: '[SCRAPING] Importer manuellement un fournisseur' })
   async importManual(
     @Body() body: {
       name: string;
@@ -81,6 +93,117 @@ export class AlibabaController {
     };
   }
 
+  // ── API OFFICIELLE (disponible apres approbation) ─────────────────
+
+  @Get('api/categories')
+  @ApiOperation({ summary: '[API] Liste des categories Alibaba' })
+  async getCategories(@Query('parentId') parentId?: string) {
+    return {
+      result: true,
+      data: await this.apiService.getCategories(parentId ? parseInt(parentId) : undefined),
+    };
+  }
+
+  @Get('api/search/products')
+  @ApiOperation({ summary: '[API] Rechercher des produits Alibaba' })
+  async searchProducts(
+    @Query('keyword') keyword: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('priceMin') priceMin?: string,
+    @Query('priceMax') priceMax?: string,
+  ) {
+    return {
+      result: true,
+      data: await this.apiService.searchProducts({
+        keyword,
+        categoryId,
+        page: page ? parseInt(page) : 1,
+        pageSize: pageSize ? parseInt(pageSize) : 20,
+        priceMin: priceMin ? parseFloat(priceMin) : undefined,
+        priceMax: priceMax ? parseFloat(priceMax) : undefined,
+      }),
+    };
+  }
+
+  @Get('api/search/suppliers')
+  @ApiOperation({ summary: '[API] Rechercher des fournisseurs Alibaba' })
+  async searchSuppliers(
+    @Query('keyword') keyword: string,
+    @Query('country') country?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return {
+      result: true,
+      data: await this.apiService.searchSuppliers({
+        keyword,
+        country,
+        page: page ? parseInt(page) : 1,
+        pageSize: pageSize ? parseInt(pageSize) : 20,
+      }),
+    };
+  }
+
+  @Get('api/supplier/:loginId')
+  @ApiOperation({ summary: '[API] Infos d\'un fournisseur par son loginId' })
+  async getSupplier(@Param('loginId') loginId: string) {
+    return {
+      result: true,
+      data: await this.apiService.getSupplierInfo(loginId),
+    };
+  }
+
+  @Post('api/import/supplier')
+  @ApiOperation({ summary: '[API] Importer un fournisseur Alibaba par loginId' })
+  async importSupplierByApi(
+    @Body() body: { loginId: string; categoryId?: string; maxProducts?: number },
+  ) {
+    return this.importService.importSupplierByLoginId(body.loginId, {
+      categoryId: body.categoryId,
+      maxProducts: body.maxProducts,
+    });
+  }
+
+  @Post('api/import/keyword')
+  @ApiOperation({ summary: '[API] Importer des fournisseurs par mot-cle' })
+  async importByKeyword(
+    @Body() body: {
+      keyword: string;
+      categoryId?: string;
+      country?: string;
+      maxSuppliers?: number;
+      maxProductsPerSupplier?: number;
+    },
+  ) {
+    return this.importService.importSuppliersByKeyword(body.keyword, body);
+  }
+
+  @Post('api/import/products')
+  @ApiOperation({ summary: '[API] Importer des produits dans une boutique existante' })
+  async importProductsToShop(
+    @Body() body: {
+      shopId: string;
+      keyword: string;
+      categoryId?: string;
+      page?: number;
+      pageSize?: number;
+      priceMin?: number;
+      priceMax?: number;
+    },
+  ) {
+    return this.importService.importProductsBySearch(body.shopId, body);
+  }
+
+  @Post('api/sync/:shopId')
+  @ApiOperation({ summary: '[API] Synchroniser les prix d\'une boutique Alibaba' })
+  async syncShop(@Param('shopId') shopId: string) {
+    return this.importService.syncShop(shopId);
+  }
+
+  // ── GESTION DES BOUTIQUES IMPORTEES ──────────────────────────────
+
   @Get('shops')
   @ApiOperation({ summary: 'Lister les boutiques importees depuis Alibaba' })
   async listImportedShops(
@@ -93,9 +216,7 @@ export class AlibabaController {
     const [shops, total] = await Promise.all([
       this.prisma.shop.findMany({
         where: { source: 'ALIBABA' },
-        include: {
-          _count: { select: { products: true } },
-        },
+        include: { _count: { select: { products: true } } },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -118,19 +239,13 @@ export class AlibabaController {
       select: { id: true, name: true, source: true, userId: true },
     });
 
-    if (!shop) {
-      return { result: false, message: 'Boutique introuvable' };
-    }
+    if (!shop) return { result: false, message: 'Boutique introuvable' };
     if (shop.source !== 'ALIBABA') {
-      return { result: false, message: 'Seules les boutiques Alibaba peuvent etre supprimees via cette route' };
+      return { result: false, message: 'Seules les boutiques Alibaba peuvent etre supprimees ici' };
     }
 
-    // Supprimer la boutique (cascade supprimera les produits)
-    // Puis supprimer l'utilisateur fictif
     await this.prisma.shop.delete({ where: { id: shopId } });
-    await this.prisma.user.delete({ where: { id: shop.userId } }).catch(() => {
-      // L'utilisateur peut avoir ete deja supprime par cascade
-    });
+    await this.prisma.user.delete({ where: { id: shop.userId } }).catch(() => {});
 
     return { result: true, data: { message: `Boutique "${shop.name}" supprimee` } };
   }
