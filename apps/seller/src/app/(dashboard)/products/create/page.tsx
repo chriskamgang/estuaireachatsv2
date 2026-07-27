@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X, PackagePlus, Bot, Loader2, Sparkles, CheckCircle, ImagePlus, Video, Star, FileText, Tag } from 'lucide-react';
 import { api } from '@/lib/api';
+import VoiceTextarea from '@/components/ui/VoiceTextarea';
 
 const AI_API_URL = '/api/ai-product-analyze';
 
@@ -687,12 +688,24 @@ export default function CreateProductPage() {
             <h2 className={sectionTitle}>Description du produit</h2>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Description courte</label>
-                <textarea value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} rows={2} placeholder="Courte description pour les listes..." className={inputClass} />
+                <VoiceTextarea
+                  label="Description courte"
+                  value={shortDesc}
+                  onChange={setShortDesc}
+                  rows={2}
+                  placeholder="Courte description pour les listes... ou dictez avec le micro"
+                  className={inputClass.replace('w-full ', '')}
+                />
               </div>
               <div>
-                <label className={labelClass}>Description complete</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={8} placeholder="Description detaillee du produit..." className={`${inputClass} resize-y`} />
+                <VoiceTextarea
+                  label="Description complete"
+                  value={description}
+                  onChange={setDescription}
+                  rows={8}
+                  placeholder="Description detaillee du produit... ou dictez avec le micro"
+                  className={inputClass.replace('w-full ', '')}
+                />
               </div>
             </div>
           </div>

@@ -8,9 +8,11 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { memoryStorage } from 'multer';
 import { UploadService } from './upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -92,5 +94,48 @@ export class UploadController {
   @ApiOperation({ summary: 'Supprimer un upload (ADMIN)' })
   adminDelete(@Param('id') id: string) {
     return this.uploadService.remove(id);
+  }
+
+  @Post('transcribe')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('audio', { storage: memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } }))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        audio: { type: 'string', format: 'binary' },
+        language: { type: 'string', example: 'fr', description: 'Code langue ISO (fr, en, auto)' },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Transcrire un audio en texte via Whisper (OpenAI)' })
+  async transcribe(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('language') language?: string,
+  ) {
+    if (!file) throw new BadRequestException('Fichier audio requis');
+
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) throw new BadRequestException('OPENAI_API_KEY non configure');
+
+    const { default: OpenAI } = await import('openai');
+    const openai = new OpenAI({ apiKey: openaiKey });
+
+    const audioFile = new File(
+      [new Uint8Array(file.buffer)],
+      file.originalname || 'audio.webm',
+      { type: file.mimetype || 'audio/webm' },
+    );
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioFile,
+      model: 'whisper-1',
+      language: (language && language !== 'auto') ? language : undefined,
+      response_format: 'text',
+    });
+
+    return { result: true, data: { text: transcription } };
   }
 }

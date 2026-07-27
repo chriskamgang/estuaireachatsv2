@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, X, Package, Bot, Loader2, Sparkles, CheckCircle, ArrowLeft } from 'lucide-react';
 import { api } from '@/lib/api';
+import VoiceTextarea from '@/components/ui/VoiceTextarea';
 
 const AI_API_URL = '/api/ai-product-analyze';
 
@@ -349,8 +350,14 @@ export default function EditProductPage() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} placeholder="Description du produit..." className={inputClass} />
+                <VoiceTextarea
+                  label="Description"
+                  value={description}
+                  onChange={setDescription}
+                  rows={5}
+                  placeholder="Description du produit... ou dictez avec le micro"
+                  className={inputClass.replace('w-full ', '')}
+                />
               </div>
               <div>
                 <label className={labelClass}>Tags (separes par des virgules)</label>
