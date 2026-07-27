@@ -34,15 +34,13 @@ class ApiClient {
       headers,
     });
 
-    if (res.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('admin_accessToken');
-      localStorage.removeItem('admin_refreshToken');
-      window.location.href = '/login';
-      throw new Error('Session expiree');
-    }
-
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: 'Erreur reseau' }));
+      if (res.status === 401 && typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
+        localStorage.removeItem('admin_accessToken');
+        localStorage.removeItem('admin_refreshToken');
+        window.location.href = '/login';
+      }
       throw new Error(error.message || `Erreur ${res.status}`);
     }
 
