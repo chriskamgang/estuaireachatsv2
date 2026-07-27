@@ -235,6 +235,8 @@ model Shop {
   capabilities    Json       @default("[]") // ex: ["Service ODM disponible", "Personnalisation complete"]
   certifications  Json       @default("[]") // ex: ["CE", "ISO 9001"]
   factoryImages   Json       @default("[]") // URLs of factory/warehouse images
+  source          String     @default("LOCAL") // LOCAL, ALIBABA
+  externalUrl     String?    // URL de la boutique source (ex: alibaba.com)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -39,6 +39,7 @@ import { NexahSmsModule } from './nexah-sms/nexah-sms.module';
 import { PosModule } from './pos/pos.module';
 import { AiSourcingModule } from './ai-sourcing/ai-sourcing.module';
 import { SearchHistoryModule } from './search-history/search-history.module';
+import { AlibabaModule } from './alibaba/alibaba.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { SearchHistoryModule } from './search-history/search-history.module';
     PosModule,
     AiSourcingModule,
     SearchHistoryModule,
+    AlibabaModule,
   ],
 })
 export class AppModule {}

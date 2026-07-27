@@ -17,10 +17,11 @@ export class ShopsService {
     const shops = await this.prisma.shop.findMany({
       where: {
         status: 'ACTIVE',
-        // Seules les boutiques avec package paye (ou admin) sont visibles
+        // Boutiques visibles: avec package paye, admin, ou importees (Alibaba)
         OR: [
           { sellerPackageId: { not: null } },
           { user: { role: 'ADMIN' } },
+          { source: 'ALIBABA' },
         ],
         ...(verified !== undefined && { verified }),
       },
@@ -76,8 +77,8 @@ export class ShopsService {
     }
     if (!shop) throw new NotFoundException('Boutique introuvable');
 
-    // Boutique sans package paye et non-admin = invisible
-    if (!shop.sellerPackageId && shop.user?.role !== 'ADMIN') {
+    // Boutique sans package paye et non-admin et non-Alibaba = invisible
+    if (!shop.sellerPackageId && shop.user?.role !== 'ADMIN' && shop.source !== 'ALIBABA') {
       throw new NotFoundException('Boutique introuvable');
     }
 

@@ -220,11 +220,12 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = {
       isPublished: true,
       status: 'ACTIVE',
-      // Seuls les produits de vendeurs avec package paye (ou produits admin) sont visibles
+      // Seuls les produits de vendeurs avec package paye, admin ou Alibaba sont visibles
       shop: {
         OR: [
           { sellerPackageId: { not: null } },
           { user: { role: 'ADMIN' } },
+          { source: 'ALIBABA' },
         ],
       },
       ...(search && {
@@ -329,6 +330,7 @@ export class ProductsService {
           OR: [
             { sellerPackageId: { not: null } },
             { user: { role: 'ADMIN' } },
+            { source: 'ALIBABA' },
           ],
         },
       },
@@ -362,11 +364,11 @@ export class ProductsService {
     // Sauf si c'est le proprietaire du produit qui y accede
     const shop = await this.prisma.shop.findUnique({
       where: { id: product.shopId },
-      select: { sellerPackageId: true, userId: true, user: { select: { role: true } } },
+      select: { sellerPackageId: true, userId: true, source: true, user: { select: { role: true } } },
     });
 
     const isOwner = requestUserId && shop?.userId === requestUserId;
-    if (shop && !shop.sellerPackageId && shop.user?.role !== 'ADMIN' && !isOwner) {
+    if (shop && !shop.sellerPackageId && shop.user?.role !== 'ADMIN' && shop.source !== 'ALIBABA' && !isOwner) {
       throw new NotFoundException('Produit non trouve');
     }
 
