@@ -7,7 +7,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AlibabaScraperService } from './alibaba-scraper.service';
 import { AlibabaApiService } from './alibaba-api.service';
@@ -15,6 +17,7 @@ import { AlibabaImportService } from './alibaba-import.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('Alibaba Import')
@@ -29,6 +32,58 @@ export class AlibabaController {
     private importService: AlibabaImportService,
     private prisma: PrismaService,
   ) {}
+
+  // ── OAUTH2 CALLBACK (public — pas de guard) ───────────────────────
+
+  @Public()
+  @Get('callback')
+  @ApiOperation({ summary: 'OAuth2 callback Alibaba — echange code contre access_token' })
+  async oauthCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Res() res: Response,
+  ) {
+    if (!code) {
+      return res.status(400).json({ error: 'Code manquant' });
+    }
+    const appKey = process.env.ALIBABA_APP_KEY;
+    const appSecret = process.env.ALIBABA_APP_SECRET;
+    const callbackUrl = 'https://backend.estuaireachats.com/api/v1/alibaba/callback';
+
+    const params = new URLSearchParams({
+      grant_type: 'authorization_code',
+      need_refresh_token: 'true',
+      client_id: appKey!,
+      client_secret: appSecret!,
+      redirect_uri: callbackUrl,
+      code,
+    });
+
+    const tokenRes = await fetch(`https://oauth.alibaba.com/token?${params.toString()}`, {
+      method: 'GET',
+    });
+    const tokenData = await tokenRes.json();
+
+    return res.json({
+      message: 'Copiez le access_token et ajoutez-le dans le .env du serveur : ALIBABA_ACCESS_TOKEN=...',
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_in: tokenData.expires_in,
+      raw: tokenData,
+    });
+  }
+
+  // ── AUTH URL ─────────────────────────────────────────────────────
+
+  @Public()
+  @Get('auth-url')
+  @ApiOperation({ summary: 'Obtenir l\'URL d\'autorisation OAuth2 Alibaba' })
+  getAuthUrl() {
+    const appKey = process.env.ALIBABA_APP_KEY;
+    const callbackUrl = 'https://backend.estuaireachats.com/api/v1/alibaba/callback';
+    const url = `https://oauth.alibaba.com/authorize?response_type=code&client_id=${appKey}&redirect_uri=${encodeURIComponent(callbackUrl)}&state=estuaire2026`;
+    return { url };
+  }
 
   // ── STATUS ───────────────────────────────────────────────────────
 
