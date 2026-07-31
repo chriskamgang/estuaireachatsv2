@@ -2,8 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapPin, Search, Loader2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || 'AIzaSyAffUHSFli6kMnjkfJOKBGO6AN828ixJPo';
+// Fix default marker icon
+const defaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 interface GoogleMapPickerProps {
   latitude: number | null;
@@ -12,198 +24,106 @@ interface GoogleMapPickerProps {
   onLocationChange: (lat: number, lng: number, address?: string, city?: string) => void;
 }
 
-declare global {
-  interface Window {
-    google: any;
-    initGoogleMaps: () => void;
+const DOUALA_LAT = 4.0511;
+const DOUALA_LNG = 9.7679;
+
+async function reverseGeocodeNominatim(lat: number, lng: number): Promise<{ address: string; city: string }> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=fr`,
+      { headers: { 'User-Agent': 'EstuaireAchats/1.0' } }
+    );
+    const data = await res.json();
+    const addr = data.display_name || '';
+    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state || '';
+    return { address: addr, city };
+  } catch {
+    return { address: '', city: '' };
   }
 }
 
-let googleMapsLoaded = false;
-let googleMapsLoading = false;
-const loadCallbacks: (() => void)[] = [];
-
-function loadGoogleMaps(): Promise<void> {
-  return new Promise((resolve) => {
-    if (googleMapsLoaded && window.google?.maps) {
-      resolve();
-      return;
-    }
-
-    loadCallbacks.push(resolve);
-
-    if (googleMapsLoading) return;
-    googleMapsLoading = true;
-
-    window.initGoogleMaps = () => {
-      googleMapsLoaded = true;
-      loadCallbacks.forEach((cb) => cb());
-      loadCallbacks.length = 0;
+async function searchNominatim(query: string): Promise<{ lat: number; lng: number; address: string; city: string } | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Cameroun')}&limit=1&addressdetails=1&accept-language=fr`,
+      { headers: { 'User-Agent': 'EstuaireAchats/1.0' } }
+    );
+    const data = await res.json();
+    if (data.length === 0) return null;
+    const result = data[0];
+    const city = result.address?.city || result.address?.town || result.address?.village || result.address?.state || '';
+    return {
+      lat: parseFloat(result.lat),
+      lng: parseFloat(result.lon),
+      address: result.display_name || '',
+      city,
     };
+  } catch {
+    return null;
+  }
+}
 
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places&callback=initGoogleMaps`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
   });
+  return null;
+}
+
+function MapFlyTo({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([lat, lng], 16, { duration: 0.8 });
+  }, [map, lat, lng]);
+  return null;
 }
 
 export default function GoogleMapPicker({ latitude, longitude, address, onLocationChange }: GoogleMapPickerProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(true);
+  const [markerPos, setMarkerPos] = useState<[number, number] | null>(
+    latitude && longitude ? [latitude, longitude] : null
+  );
+  const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
   const [currentAddress, setCurrentAddress] = useState(address || '');
+  const markerRef = useRef<L.Marker>(null);
 
-  // Douala par defaut
-  const defaultLat = latitude || 4.0511;
-  const defaultLng = longitude || 9.7679;
-
-  const reverseGeocode = useCallback((lat: number, lng: number) => {
-    if (!window.google?.maps) return;
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
-      if (status === 'OK' && results[0]) {
-        const addr = results[0].formatted_address;
-        setCurrentAddress(addr);
-
-        // Extraire la ville
-        let city = '';
-        for (const component of results[0].address_components) {
-          if (component.types.includes('locality')) {
-            city = component.long_name;
-            break;
-          }
-          if (component.types.includes('administrative_area_level_2')) {
-            city = component.long_name;
-          }
-        }
-
-        onLocationChange(lat, lng, addr, city);
-      }
-    });
+  const handleMapClick = useCallback(async (lat: number, lng: number) => {
+    setMarkerPos([lat, lng]);
+    const { address: addr, city } = await reverseGeocodeNominatim(lat, lng);
+    setCurrentAddress(addr);
+    onLocationChange(lat, lng, addr, city);
   }, [onLocationChange]);
 
-  const updateMarker = useCallback((lat: number, lng: number) => {
-    if (!mapInstanceRef.current) return;
-    const pos = new window.google.maps.LatLng(lat, lng);
+  const handleMarkerDrag = useCallback(async () => {
+    const marker = markerRef.current;
+    if (!marker) return;
+    const pos = marker.getLatLng();
+    setMarkerPos([pos.lat, pos.lng]);
+    const { address: addr, city } = await reverseGeocodeNominatim(pos.lat, pos.lng);
+    setCurrentAddress(addr);
+    onLocationChange(pos.lat, pos.lng, addr, city);
+  }, [onLocationChange]);
 
-    if (markerRef.current) {
-      markerRef.current.setPosition(pos);
-    } else {
-      markerRef.current = new window.google.maps.Marker({
-        position: pos,
-        map: mapInstanceRef.current,
-        draggable: true,
-        animation: window.google.maps.Animation.DROP,
-        title: 'Emplacement de la boutique',
-      });
-
-      markerRef.current.addListener('dragend', (e: any) => {
-        const newLat = e.latLng.lat();
-        const newLng = e.latLng.lng();
-        reverseGeocode(newLat, newLng);
-      });
-    }
-
-    mapInstanceRef.current.panTo(pos);
-  }, [reverseGeocode]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    loadGoogleMaps().then(() => {
-      if (cancelled || !mapRef.current) return;
-
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: { lat: defaultLat, lng: defaultLng },
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        styles: [
-          { featureType: 'poi', stylers: [{ visibility: 'simplified' }] },
-        ],
-      });
-
-      mapInstanceRef.current = map;
-
-      // Click sur la carte pour placer le marqueur
-      map.addListener('click', (e: any) => {
-        const lat = e.latLng.lat();
-        const lng = e.latLng.lng();
-        updateMarker(lat, lng);
-        reverseGeocode(lat, lng);
-      });
-
-      // Placer le marqueur initial si coords existent
-      if (latitude && longitude) {
-        updateMarker(latitude, longitude);
-      }
-
-      // Autocomplete sur la barre de recherche
-      if (searchInputRef.current) {
-        const autocomplete = new window.google.maps.places.Autocomplete(searchInputRef.current, {
-          componentRestrictions: { country: 'cm' },
-          fields: ['geometry', 'formatted_address', 'address_components'],
-        });
-
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place.geometry?.location) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-            updateMarker(lat, lng);
-            map.setZoom(16);
-
-            const addr = place.formatted_address || '';
-            setCurrentAddress(addr);
-            setSearchQuery('');
-
-            let city = '';
-            for (const component of (place.address_components || [])) {
-              if (component.types.includes('locality')) {
-                city = component.long_name;
-                break;
-              }
-              if (component.types.includes('administrative_area_level_2')) {
-                city = component.long_name;
-              }
-            }
-
-            onLocationChange(lat, lng, addr, city);
-          }
-        });
-      }
-
-      setLoading(false);
-    });
-
-    return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim() || !window.google?.maps) return;
-
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode(
-      { address: searchQuery, componentRestrictions: { country: 'CM' } },
-      (results: any[], status: string) => {
-        if (status === 'OK' && results[0]) {
-          const lat = results[0].geometry.location.lat();
-          const lng = results[0].geometry.location.lng();
-          updateMarker(lat, lng);
-          mapInstanceRef.current?.setZoom(16);
-          reverseGeocode(lat, lng);
-          setSearchQuery('');
-        }
-      },
-    );
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    const result = await searchNominatim(searchQuery);
+    setSearching(false);
+    if (result) {
+      setMarkerPos([result.lat, result.lng]);
+      setFlyTo([result.lat, result.lng]);
+      setCurrentAddress(result.address);
+      setSearchQuery('');
+      onLocationChange(result.lat, result.lng, result.address, result.city);
+    }
   };
+
+  const centerLat = markerPos?.[0] ?? DOUALA_LAT;
+  const centerLng = markerPos?.[1] ?? DOUALA_LNG;
 
   return (
     <div className="space-y-3">
@@ -212,30 +132,40 @@ export default function GoogleMapPicker({ latitude, longitude, address, onLocati
         Emplacement de la boutique
       </div>
 
-      {/* Barre de recherche */}
-      <form onSubmit={handleSearchSubmit} className="relative">
+      <form onSubmit={handleSearch} className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-3" />
         <input
-          ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Rechercher un lieu au Cameroun..."
           className="w-full pl-10 pr-3 py-2.5 border border-gray-5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
+        {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-primary" />}
       </form>
 
-      {/* Carte */}
       <div className="relative rounded-lg overflow-hidden border border-gray-5" style={{ height: 350 }}>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        )}
-        <div ref={mapRef} className="w-full h-full" />
+        <MapContainer
+          center={[centerLat, centerLng]}
+          zoom={15}
+          style={{ height: '100%', width: '100%' }}
+          attributionControl={false}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <MapClickHandler onMapClick={handleMapClick} />
+          {flyTo && <MapFlyTo lat={flyTo[0]} lng={flyTo[1]} />}
+          {markerPos && (
+            <Marker
+              position={markerPos}
+              icon={defaultIcon}
+              draggable
+              ref={markerRef}
+              eventHandlers={{ dragend: handleMarkerDrag }}
+            />
+          )}
+        </MapContainer>
       </div>
 
-      {/* Adresse detectee */}
       {currentAddress && (
         <div className="flex items-start gap-2 px-3 py-2 bg-green-50 rounded-lg">
           <MapPin className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />

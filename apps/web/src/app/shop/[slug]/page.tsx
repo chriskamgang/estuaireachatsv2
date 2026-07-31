@@ -234,6 +234,10 @@ export default function ShopPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('Produits');
   const [chatLoading, setChatLoading] = useState(false);
+  const [productsPage, setProductsPage] = useState(1);
+  const [productsTotal, setProductsTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PRODUCTS_PER_PAGE = 40;
 
   const handleContactSeller = async () => {
     if (!shop) return;
@@ -256,6 +260,23 @@ export default function ShopPage() {
     }
   };
 
+  const loadMoreProducts = async () => {
+    if (!shop || loadingMore) return;
+    const nextPage = productsPage + 1;
+    setLoadingMore(true);
+    try {
+      const res = await api.get<{ data: any[]; meta: { total: number } }>(
+        `/products?shopId=${shop.id}&perPage=${PRODUCTS_PER_PAGE}&page=${nextPage}`
+      );
+      setProducts((prev) => [...prev, ...(res.data || [])]);
+      setProductsPage(nextPage);
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   // Fetch shop data
   useEffect(() => {
     if (!slug) return;
@@ -271,10 +292,12 @@ export default function ShopPage() {
 
         // Fetch products for this shop
         const shopId = shopData.id;
-        return api.get<{ data: any[] }>(`/products?shopId=${shopId}`);
+        return api.get<{ data: any[]; meta: { total: number } }>(`/products?shopId=${shopId}&perPage=${PRODUCTS_PER_PAGE}&page=1`);
       })
       .then((res) => {
-        setProducts(res.data || (res as any) || []);
+        setProducts(res.data || []);
+        setProductsTotal(res.meta?.total || 0);
+        setProductsPage(1);
       })
       .catch((err) => {
         console.error('Erreur chargement boutique:', err);
@@ -549,27 +572,35 @@ export default function ShopPage() {
       </div>
 
       {/* ================================================================== */}
-      {/* TAB BAR */}
+      {/* TAB BAR — sticky full width */}
+      {/* ================================================================== */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-5 shadow-sm">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-6">
+          <div className="flex gap-0">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-6 py-4 text-[15px] font-medium transition-colors border-b-2',
+                  activeTab === tab
+                    ? 'border-dark text-dark'
+                    : 'border-transparent text-gray-3 hover:text-dark'
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================== */}
+      {/* TAB CONTENT */}
       {/* ================================================================== */}
       <div className="max-w-[1440px] mx-auto px-4 lg:px-6">
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1 min-w-0">
-            <div className="flex gap-0 border-b border-gray-5 bg-white sticky top-[64px] z-20">
-              {TABS.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={cn(
-                    'px-6 py-4 text-[15px] font-medium transition-colors border-b-2',
-                    activeTab === tab
-                      ? 'border-dark text-dark'
-                      : 'border-transparent text-gray-3 hover:text-dark'
-                  )}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
 
             {/* ============================================================ */}
             {/* TAB: Produits */}
@@ -588,11 +619,35 @@ export default function ShopPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {products.map((product: any) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {products.map((product: any) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+
+                    <div className="text-center mt-8">
+                      <p className="text-[13px] text-gray-3 mb-3">
+                        {products.length} sur {productsTotal} produits affiches
+                      </p>
+                      {products.length < productsTotal && (
+                        <button
+                          onClick={loadMoreProducts}
+                          disabled={loadingMore}
+                          className="px-8 py-2.5 bg-orange text-white rounded-full text-[14px] font-semibold hover:bg-orange-light transition-colors disabled:opacity-50"
+                        >
+                          {loadingMore ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Chargement...
+                            </span>
+                          ) : (
+                            'Voir plus de produits'
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}

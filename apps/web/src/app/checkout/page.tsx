@@ -7,7 +7,8 @@ import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { formatPrice } from '@/lib/utils';
 import { api } from '@/lib/api';
-import AddressMapPicker from '@/components/AddressMapPicker';
+import dynamic from 'next/dynamic';
+const AddressMapPicker = dynamic(() => import('@/components/AddressMapPicker'), { ssr: false });
 import StripeCardForm from '@/components/StripeCardForm';
 import { estimateShipping, type ShippingRate } from '@/lib/shipping';
 import {
