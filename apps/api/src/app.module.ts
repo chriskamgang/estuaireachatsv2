@@ -40,6 +40,7 @@ import { PosModule } from './pos/pos.module';
 import { AiSourcingModule } from './ai-sourcing/ai-sourcing.module';
 import { SearchHistoryModule } from './search-history/search-history.module';
 import { AlibabaModule } from './alibaba/alibaba.module';
+import { CallCenterModule } from './call-center/call-center.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { AlibabaModule } from './alibaba/alibaba.module';
     AiSourcingModule,
     SearchHistoryModule,
     AlibabaModule,
+    CallCenterModule,
   ],
 })
 export class AppModule {}

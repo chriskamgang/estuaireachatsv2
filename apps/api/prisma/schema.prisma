@@ -16,6 +16,7 @@ enum UserRole {
   SELLER
   ADMIN
   STAFF
+  CALL_CENTER
 }
 
 enum UserStatus {
@@ -174,6 +175,7 @@ model User {
   combinedOrders    CombinedOrder[]
   withdrawRequests  WithdrawRequest[] @relation("SellerWithdraws")
   searches          UserSearch[]
+  callLogs          CallLog[]        @relation("AgentCallLogs")
 
   @@map("users")
 }
@@ -562,6 +564,7 @@ model Order {
   refunds       RefundRequest[]
   deliveryBoy   DeliveryBoy?   @relation(fields: [deliveryBoyId], references: [id])
   shipments     Shipment[]
+  callLogs      CallLog[]
 
   @@map("orders")
 }
@@ -1358,6 +1361,39 @@ model Warranty {
   createdAt DateTime @default(now())
 
   @@map("warranties")
+}
+
+// ============================================================
+// CALL CENTER
+// ============================================================
+
+enum CallResult {
+  CONFIRMED
+  NO_ANSWER
+  CANCELLED
+  CALLBACK
+  WRONG_NUMBER
+  OTHER
+}
+
+model CallLog {
+  id          String     @id @default(cuid())
+  orderId     String
+  agentId     String
+  callResult  CallResult
+  duration    Int?       // duree en secondes
+  notes       String?    @db.Text
+  scheduledAt DateTime?  // rappel planifie
+
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  agent User  @relation("AgentCallLogs", fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([agentId])
+  @@index([createdAt])
+  @@map("call_logs")
 }
 
 // ============================================================
