@@ -41,6 +41,7 @@ import { AiSourcingModule } from './ai-sourcing/ai-sourcing.module';
 import { SearchHistoryModule } from './search-history/search-history.module';
 import { AlibabaModule } from './alibaba/alibaba.module';
 import { CallCenterModule } from './call-center/call-center.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { CallCenterModule } from './call-center/call-center.module';
     SearchHistoryModule,
     AlibabaModule,
     CallCenterModule,
+    WhatsAppModule,
   ],
 })
 export class AppModule {}

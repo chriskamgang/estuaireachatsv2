@@ -6,10 +6,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto, UpdateDeliveryStatusDto, UpdatePaymentStatusDto } from './dto/create-order.dto';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private whatsapp: WhatsAppService,
+  ) {}
 
   /**
    * Creer une commande depuis le panier de l'utilisateur.
@@ -157,6 +161,11 @@ export class OrdersService {
       return { combinedOrderId: combinedOrder.id, orderIds, orderNumber: firstOrderNumber };
     });
 
+    // Envoyer les notifications WhatsApp (en arriere-plan, sans bloquer)
+    this.sendOrderWhatsAppNotifications(userId, result.orderIds).catch((err) =>
+      console.error('[WhatsApp] Erreur envoi notifications:', err),
+    );
+
     return {
       result: true,
       message: 'Commande creee avec succes',
@@ -165,6 +174,56 @@ export class OrdersService {
     } catch (error) {
       console.error('[createFromCart] ERROR:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Envoyer les notifications WhatsApp apres une commande
+   */
+  private async sendOrderWhatsAppNotifications(buyerId: string, orderIds: string[]) {
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: buyerId },
+      select: { firstName: true, lastName: true, phone: true },
+    });
+
+    for (const orderId of orderIds) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          seller: {
+            select: { phone: true, firstName: true, shop: { select: { name: true, phone: true } } },
+          },
+        },
+      });
+      if (!order) continue;
+
+      const clientName = `${buyer?.firstName || ''} ${buyer?.lastName || ''}`.trim();
+      const shopPhone = order.seller?.shop?.phone || order.seller?.phone;
+      const shopName = order.seller?.shop?.name || order.seller?.firstName || 'Boutique';
+
+      // 1. Message au client
+      if (buyer?.phone) {
+        await this.whatsapp.sendOrderConfirmationToClient(buyer.phone, order.orderNumber, order.total);
+      }
+
+      // 2. Message a la boutique
+      if (shopPhone) {
+        await this.whatsapp.sendNewOrderToSeller(shopPhone, order.orderNumber, order.total, clientName);
+      }
+
+      // 3. Message au call center (agents CALL_CENTER)
+      const callCenterAgents = await this.prisma.user.findMany({
+        where: { role: 'CALL_CENTER', status: 'ACTIVE' },
+        select: { phone: true },
+      });
+      for (const agent of callCenterAgents) {
+        if (agent.phone) {
+          await this.whatsapp.sendNewOrderToCallCenter(
+            agent.phone, order.orderNumber, order.total,
+            clientName, buyer?.phone || '-', shopName,
+          );
+        }
+      }
     }
   }
 

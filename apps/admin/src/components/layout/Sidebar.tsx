@@ -314,6 +314,9 @@ const menuItems: MenuItem[] = [
     ],
   },
 
+  // ── WhatsApp ──
+  { label: 'WhatsApp', href: '/whatsapp', icon: Smartphone },
+
   // ── Addon Manager ──
   { label: 'Gestionnaire modules', href: '/addons', icon: Puzzle },
 ];

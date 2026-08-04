@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCallLogDto } from './dto/create-call-log.dto';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class CallCenterService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private whatsapp: WhatsAppService,
+  ) {}
 
   // ─── DASHBOARD STATS ────────────────────────────────────────
   async getDashboard() {
@@ -132,6 +136,8 @@ export class CallCenterService {
         where: { id: dto.orderId },
         data: { status: 'CONFIRMED' },
       });
+      // Notifier le client par WhatsApp
+      this.notifyClientStatusChange(order.userId, order.orderNumber, 'CONFIRMED').catch(() => {});
     }
 
     // Si l'agent annule la commande
@@ -140,6 +146,7 @@ export class CallCenterService {
         where: { id: dto.orderId },
         data: { status: 'CANCELLED', cancelledAt: new Date() },
       });
+      this.notifyClientStatusChange(order.userId, order.orderNumber, 'CANCELLED').catch(() => {});
     }
 
     return callLog;
@@ -188,5 +195,16 @@ export class CallCenterService {
       },
       orderBy: { scheduledAt: 'asc' },
     });
+  }
+
+  // ─── NOTIFICATION WHATSAPP ─────────────────────────────────
+  private async notifyClientStatusChange(buyerId: string, orderNumber: string, status: string) {
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: buyerId },
+      select: { phone: true },
+    });
+    if (buyer?.phone) {
+      await this.whatsapp.sendOrderStatusToClient(buyer.phone, orderNumber, status);
+    }
   }
 }
